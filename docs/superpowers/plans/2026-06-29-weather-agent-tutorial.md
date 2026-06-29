@@ -930,7 +930,8 @@ async function main() {
     // Author v2: a tweaked persona, released to the `staging` label only.
     const versions = await client.prompts.listVersions({ projectId: TO11_PROJECT_ID!, promptId: prompt.id });
     // Pick v1 explicitly — listVersions order is not guaranteed (rollback does the same).
-    const v1 = versions.find((v) => v.version === 1) ?? versions[0];
+    const v1 = versions.find((v) => v.version === 1);
+    if (!v1) throw new Error("no v1 to base v2 on — run \"bun run author\" first");
     const v1full = await client.prompts.getVersion({
       projectId: TO11_PROJECT_ID!, promptId: prompt.id, versionNumber: v1.version,
     });
@@ -985,7 +986,8 @@ async function main() {
   if (command === "rollback") {
     // Move `prod` back to v1 — no app redeploy.
     const versions = await client.prompts.listVersions({ projectId: TO11_PROJECT_ID!, promptId: prompt.id });
-    const v1 = versions.find((v) => v.version === 1) ?? versions[versions.length - 1];
+    const v1 = versions.find((v) => v.version === 1);
+    if (!v1) throw new Error("no v1 to roll back to — run \"bun run author\" first");
     await client.prompts.moveLabel({
       projectId: TO11_PROJECT_ID!, promptId: prompt.id, label: "prod",
       versionId: v1.id, reason: "Rollback prod to v1.",
