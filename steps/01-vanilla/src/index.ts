@@ -30,8 +30,47 @@ const messages: ChatCompletionMessageParam[] = [
   ...(tier === "vip"
     ? ([{ role: "system", content: "This is a VIP user. Add a one-line packing suggestion." }] as ChatCompletionMessageParam[])
     : []),
-  // Few-shot: the tools only return CURRENT conditions, so the model shouldn't
-  // invent a forecast — it declines and offers what it can actually do.
+  // Few-shot (positive): the desired tool-use pattern — geocode the city, fetch
+  // current weather, then answer from the tool results (never from memory).
+  { role: "user", content: "What's the weather in London right now?" },
+  {
+    role: "assistant",
+    content: null,
+    tool_calls: [
+      {
+        id: "call_geo_london",
+        type: "function",
+        function: { name: "geocode_city", arguments: '{"name":"London"}' },
+      },
+    ],
+  },
+  {
+    role: "tool",
+    tool_call_id: "call_geo_london",
+    content: '{"latitude":51.5074,"longitude":-0.1278,"name":"London"}',
+  },
+  {
+    role: "assistant",
+    content: null,
+    tool_calls: [
+      {
+        id: "call_wx_london",
+        type: "function",
+        function: {
+          name: "get_current_weather",
+          arguments: '{"latitude":51.5074,"longitude":-0.1278,"temperature_unit":"fahrenheit"}',
+        },
+      },
+    ],
+  },
+  {
+    role: "tool",
+    tool_call_id: "call_wx_london",
+    content: '{"temperature_2m":59,"wind_speed_10m":8,"relative_humidity_2m":72}',
+  },
+  { role: "assistant", content: "It's about 59°F and breezy in London right now." },
+  // Few-shot (negative): the tools only return CURRENT conditions, so the model
+  // shouldn't invent a forecast — it declines and offers what it can actually do.
   { role: "user", content: "What's the weather in Paris going to be like this weekend?" },
   {
     role: "assistant",
