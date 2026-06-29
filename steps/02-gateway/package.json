@@ -1,0 +1,16 @@
+{
+	"name": "weather-agent-02-gateway",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"start": "bun src/index.ts",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"openai": "^4"
+	},
+	"devDependencies": {
+		"@types/bun": "latest",
+		"typescript": "^5"
+	}
+}
