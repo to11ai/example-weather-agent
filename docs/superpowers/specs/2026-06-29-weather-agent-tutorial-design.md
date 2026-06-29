@@ -66,6 +66,7 @@ No root workspace; each directory installs and runs on its own.
   - `get_current_weather({ latitude, longitude })` → current conditions via **Open-Meteo** (`api.open-meteo.com/v1/forecast`).
   - The two calls are **chained**: the model feeds `geocode_city`'s lat/lon into `get_current_weather` — that dependency is the core tool-loop lesson.
 - **Prompt content** (persona, operating rules, VIP conditional, few-shot discipline example, templated user turn) as defined in the prototype's `author.ts`. In steps 01–03 this is assembled inline in app code; from step 04 it lives only in to11.
+- **All five to11 block roles are demonstrated** in the step-04 authored template: `system` (persona, VIP), `developer` (operating rules), `user` + `assistant` (few-shot, user turn), and `tool` (the two tool-definition blocks). V1 rendering normalizes `developer`→`user` and filters `tool` blocks from the returned messages — so the live call's tools come from `modelConfig.tools`, and tool *results* re-enter the loop as `role: "tool"` messages. The READMEs surface this behavior rather than hide it.
 - **Tool-use loop**: stateless replay — call the model, append the assistant turn, execute any requested tools against the live API, append tool results, repeat until the model returns a final answer.
 
 ## Step-by-step deltas
