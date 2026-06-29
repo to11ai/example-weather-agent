@@ -6,7 +6,7 @@
 
 **Architecture:** A standalone repo with self-contained, runnable snapshot directories under `steps/`. Each step copies the previous step's code forward and changes exactly one thing; the inter-step `diff` is the teaching artifact. TypeScript, run with Bun (which executes TypeScript directly and auto-loads `.env`). The agent geocodes a city and reads current weather via keyless Open-Meteo APIs, answering through an OpenAI `gpt-4o` tool-use loop.
 
-**Tech Stack:** TypeScript, Bun (runtime + package manager), `openai` (^4), `@to11ai/sdk`, Open-Meteo public APIs, OpenAI `gpt-4o`, the to11 gateway + control-plane API.
+**Tech Stack:** TypeScript, Bun (runtime + package manager), `openai` (^4), Open-Meteo public APIs, OpenAI `gpt-4o`, the to11 gateway + control-plane API. `@to11ai/sdk` is added only from step 04 (prompt management) — steps 02–03 route through the gateway with the OpenAI SDK + plain headers, no to11 SDK.
 
 **Verification model (read first — this is a tutorial repo, not a service):** There is no unit-test suite; the readable example code *is* the deliverable. The automated gate for every task is `bun install` + `bun run typecheck` (`tsc --noEmit`) passing with no errors. End-to-end runs require live credentials: step 01 runs with an `OPENAI_API_KEY`; steps 02–05 require a reachable to11 instance + keys and are verified manually per the step README. Do not invent vitest/jest tests for the example apps — typecheck + documented manual run is the gate.
 
@@ -29,7 +29,7 @@ text-only negative few-shot.
 - LLM provider is OpenAI `gpt-4o`. Model params: `temperature: 0.3`, `max_tokens: 400`.
 - to11 defaults (overridable via env): gateway (data plane) `TO11_GATEWAY_URL=https://gw.to11.ai/v1`; control-plane API `TO11_API_URL=https://api.to11ai.com`; `TO11_ENV=prod`. Local overrides: gateway `http://localhost:4000/v1`, API `http://localhost:4500`.
 - Two distinct to11 URLs, never conflated: `TO11_GATEWAY_URL` is the OpenAI client `baseURL`; `TO11_API_URL` is `createClient`'s `baseUrl`.
-- Gateway auth is via `gatewayAuthHeaders({ apiKey, projectId, env })` from `@to11ai/sdk` → `x-to11-authorization: Bearer …`, `x-to11-project-id`, `x-to11-env`. Prompt provenance (step 05) via `gatewayPromptHeaders(fetched)`.
+- Gateway auth is plain headers set inline on the OpenAI client — `x-to11-authorization: Bearer <to11 key>`, `x-to11-project-id`, `x-to11-env`. Steps 02–03 do this with **no to11 SDK** (routing a call needs only the OpenAI SDK + headers). From step 04 the SDK is a dependency, so its `gatewayAuthHeaders`/`gatewayPromptHeaders` helpers may be used instead of inline headers; step 05 uses `gatewayPromptHeaders(fetched)` for prompt provenance.
 - `prompts.fetch()` returns rendered messages only; `modelConfig` (incl. tool schemas) comes from a separate `prompts.getVersion(...)` call. `modelConfig` is typed `unknown`; store `{ model, temperature, max_tokens, tools }` in it at author time and cast on read.
 - `.env` is gitignored; every step ships a `.env.example`.
 - Prompt slug: `weather-concierge`. Prompt variables: `assistant_name`, `city`, `units` (`fahrenheit`|`celsius`), `user_message`, `tier` (`standard`|`vip`).
@@ -450,7 +450,7 @@ gh pr create --title "Step 01: vanilla weather agent" --body "Self-contained too
 
 **Interfaces:**
 - Consumes: `src/tools.ts` and the tool-use loop from Task 2 (copied forward).
-- Produces: the gateway-routed client pattern (`gatewayAuthHeaders` + OpenAI `baseURL`) reused by steps 03–05.
+- Produces: the gateway-routed client pattern (OpenAI `baseURL` + inline `x-to11-*` headers, no SDK) reused by steps 03–05.
 
 - [ ] **Step 1: Branch and copy step 01 forward**
 
@@ -471,8 +471,7 @@ cp -R steps/01-vanilla steps/02-gateway
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "openai": "^4",
-    "@to11ai/sdk": "latest"
+    "openai": "^4"
   },
   "devDependencies": {
     "@types/bun": "latest",
@@ -480,13 +479,14 @@ cp -R steps/01-vanilla steps/02-gateway
   }
 }
 ```
+No `@to11ai/sdk` here — routing through the gateway needs only the OpenAI SDK + headers. The to11 SDK is introduced in step 04 (prompt management).
 
-- [ ] **Step 3: Verify `@to11ai/sdk` resolves from npm**
+- [ ] **Step 3: Install**
 
 ```bash
 cd steps/02-gateway && bun install
 ```
-Expected: install succeeds and `node_modules/@to11ai/sdk` exists. If the package is NOT published to the npm registry, stop and report — the tutorial's "install from the registry" premise needs the package published first (or a documented `bun link`/tarball fallback added to every step README). Do not proceed past this check silently.
+Expected: install succeeds with no new dependency beyond step 01's.
 
 - [ ] **Step 4: Replace `steps/02-gateway/.env.example`**
 
@@ -510,7 +510,6 @@ import type {
   ChatCompletionMessageParam,
   ChatCompletionTool,
 } from "openai/resources/chat/completions";
-import { gatewayAuthHeaders } from "@to11ai/sdk";
 import { TOOL_IMPLS } from "./tools";
 
 const {
@@ -524,19 +523,19 @@ if (!OPENAI_API_KEY) throw new Error("set OPENAI_API_KEY");
 if (!TO11_API_KEY || !TO11_PROJECT_ID) throw new Error("set TO11_API_KEY and TO11_PROJECT_ID");
 ```
 
-and inside `main()` replace the client construction with:
+and inside `main()` replace the client construction with (the gateway is OpenAI-compatible, so to11 auth is just inline headers — no to11 SDK needed):
 
 ```ts
   // Same OpenAI SDK — now pointed at the to11 gateway. to11 auth rides as
-  // headers; the provider key is forwarded upstream by the gateway.
+  // plain headers; the provider key is forwarded upstream by the gateway.
   const openai = new OpenAI({
     baseURL: TO11_GATEWAY_URL,
     apiKey: OPENAI_API_KEY,
-    defaultHeaders: gatewayAuthHeaders({
-      apiKey: TO11_API_KEY,
-      projectId: TO11_PROJECT_ID,
-      env: TO11_ENV,
-    }),
+    defaultHeaders: {
+      "x-to11-authorization": `Bearer ${TO11_API_KEY}`,
+      "x-to11-project-id": TO11_PROJECT_ID,
+      "x-to11-env": TO11_ENV,
+    },
   });
 ```
 Everything else in `main()` (the `while (true)` loop) is identical to step 01.
@@ -556,7 +555,7 @@ bun start
 ```
 Expected: identical assistant behavior to step 01, AND the call now appears as a trace in the to11 dashboard. If no to11 instance is reachable, note the run as skipped.
 
-- [ ] **Step 8: Rewrite `steps/02-gateway/README.md`** — Diataxis tutorial. Sections: **Goal** (route the existing agent through to11 with zero prompt change); **Prerequisites** (step 01 working + a to11 account, API key, project id); **What changed** (only the OpenAI `baseURL` + `gatewayAuthHeaders`; show the ~6-line diff from step 01); **Steps** (fill `.env`, `bun start`); **Expected output** (same answer as step 01); **Payoff** (full request/response telemetry with no prompt changes — point to the dashboard trace and the `x-to11-request-id` response header; explain the two URLs: `TO11_GATEWAY_URL` is the data plane); **Next** (Step 03 moves the provider credential into to11). 
+- [ ] **Step 8: Rewrite `steps/02-gateway/README.md`** — Diataxis tutorial. Sections: **Goal** (route the existing agent through to11 with zero prompt change); **Prerequisites** (step 01 working + a to11 account, API key, project id); **What changed** (only the OpenAI `baseURL` + inline `x-to11-*` auth headers — no to11 SDK; show the diff from step 01); **Steps** (fill `.env`, `bun start`); **Expected output** (same answer as step 01); **Payoff** (full request/response telemetry with no prompt changes — point to the dashboard trace and the `x-to11-request-id` response header; explain the two URLs: `TO11_GATEWAY_URL` is the data plane); **Next** (Step 03 moves the provider credential into to11). 
 
 - [ ] **Step 9: Commit and open PR**
 
@@ -564,7 +563,7 @@ Expected: identical assistant behavior to step 01, AND the call now appears as a
 git add steps/02-gateway
 git commit -m "feat(step-02): route the agent through the to11 gateway"
 git push -u origin step-02-gateway
-gh pr create --title "Step 02: route through the to11 gateway" --body "Point the OpenAI SDK baseURL at the to11 gateway and attach gatewayAuthHeaders. Prompt unchanged; gain observability. Typecheck passes; manual run verified (or noted skipped)."
+gh pr create --title "Step 02: route through the to11 gateway" --body "Point the OpenAI SDK baseURL at the to11 gateway and set inline x-to11-* auth headers (no to11 SDK). Prompt unchanged; gain observability. Typecheck passes; manual run verified (or noted skipped)."
 ```
 
 ---
@@ -616,14 +615,14 @@ if (!TO11_API_KEY || !TO11_PROJECT_ID) throw new Error("set TO11_API_KEY and TO1
   const openai = new OpenAI({
     baseURL: TO11_GATEWAY_URL,
     apiKey: TO11_API_KEY,
-    defaultHeaders: gatewayAuthHeaders({
-      apiKey: TO11_API_KEY,
-      projectId: TO11_PROJECT_ID,
-      env: TO11_ENV,
-    }),
+    defaultHeaders: {
+      "x-to11-authorization": `Bearer ${TO11_API_KEY}`,
+      "x-to11-project-id": TO11_PROJECT_ID,
+      "x-to11-env": TO11_ENV,
+    },
   });
 ```
-The `import` line for `OPENAI_API_KEY` usage is removed; `gatewayAuthHeaders` import stays. Loop body unchanged.
+The only change from step 02 is dropping `OPENAI_API_KEY` (and its env read). Still no to11 SDK. Loop body unchanged.
 
 - [ ] **Step 5: Typecheck**
 
@@ -678,7 +677,7 @@ cp -R steps/03-connect-provider steps/04-fetch-prompt
     "typecheck": "tsc --noEmit"
   },
 ```
-Dependencies unchanged (`openai`, `@to11ai/sdk`).
+**Add `@to11ai/sdk` — this is its first use in the tutorial** (steps 02–03 used the gateway with plain headers and no SDK). Set `dependencies` to `{ "openai": "^4", "@to11ai/sdk": "latest" }`. **Then verify it resolves from the npm registry** (`bun install`; confirm `node_modules/@to11ai/sdk` exists). If it is NOT published, stop and report — the tutorial's "install from the registry" premise needs it published first (or a documented `bun link`/tarball fallback). Do not proceed silently.
 
 - [ ] **Step 3: Append the control-plane URL to `steps/04-fetch-prompt/.env.example`**
 
@@ -1118,5 +1117,5 @@ gh pr create --title "Step 05: label-based deployment + provenance" --body "Add 
 - **Spec coverage:** Repo layout → Task 1. Steps 01–05 → Tasks 2–6 one-to-one. Two-URL convention → Global Constraints + introduced in Tasks 3/5. `fetch()`+`getVersion()` → Task 5 Step 5. Provenance + label lifecycle + rollback → Task 6. Delivery (scaffold then PR-per-step) → task structure. Open items from the spec are resolved into Global Constraints (URLs, fetch/getVersion split) or guarded with explicit verification steps (SDK publication → Task 3 Step 3; signature drift → Task 5 Step 6 / Task 6 Step 3).
 - **Placeholders:** none — every file has complete content; `"latest"` for `@to11ai/sdk` is gated by an explicit publication check.
 - **Type consistency:** `geocodeCity`/`getCurrentWeather`/`TOOL_IMPLS`, `gatewayAuthHeaders`/`gatewayPromptHeaders`, `createClient`, `prompts.fetch`/`getVersion`/`create`/`createVersion`/`moveLabel`/`list`/`listVersions`/`listLabels` used consistently across tasks and verified against the platform js-sdk surface.
-- **Known residual risks (call out at execution, do not silently absorb):** (1) `@to11ai/sdk` may not be published to npm — Task 3 Step 3 stops if so; (2) exact hosted gateway host (`gw.to11.ai` vs `gw.to11ai.com`) and control-plane host must be confirmed against the live dashboard; (3) SDK list/label return-shape property names may need adjustment at typecheck time.
+- **Known residual risks (call out at execution, do not silently absorb):** (1) `@to11ai/sdk` may not be published to npm — the step-04 task stops if so (steps 02–03 don't use it); (2) exact hosted gateway host (`gw.to11.ai` vs `gw.to11ai.com`) and control-plane host must be confirmed against the live dashboard; (3) SDK list/label return-shape property names may need adjustment at typecheck time.
 ```
