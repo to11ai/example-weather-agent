@@ -35,7 +35,8 @@ The tutorial's narrative arc:
 
 ```
 example-weather-agent/
-  README.md                 # tutorial spine: motivation + architecture & flow diagrams (Mermaid) + step index + global prereqs
+  README.md                 # tutorial spine: motivation + branded architecture diagram + runtime-flow (Mermaid) + step index + global prereqs
+  assets/architecture.svg   # branded, on-brand to11 architecture/flow diagram embedded in the README
   .gitignore  LICENSE  .env.example
   docs/superpowers/specs/2026-06-29-weather-agent-tutorial-design.md
   steps/

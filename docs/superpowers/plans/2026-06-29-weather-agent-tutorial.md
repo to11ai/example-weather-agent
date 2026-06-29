@@ -28,6 +28,7 @@
 
 **Files:**
 - Create: `.gitignore`, `LICENSE`, `README.md`, `steps/.gitkeep`
+- Already present (from the spec/plan PR): `assets/architecture.svg` — the README embeds it; do not regenerate.
 
 **Interfaces:**
 - Consumes: nothing (repo currently holds only the design spec on `main`).
@@ -51,7 +52,7 @@ dist/
 
 - [ ] **Step 3: Create `LICENSE`** (MIT, current year, "to11 AI"). Use the standard MIT text with `Copyright (c) 2026 to11 AI`.
 
-- [ ] **Step 4: Create `README.md`** — the tutorial spine. It must contain: a one-paragraph description of the weather agent; the **two Mermaid diagrams below** (architecture + runtime flow) placed near the top under a "## How it works" heading; a "What you'll build" list of the 5 steps with one line each and a link to each step dir; a global Prerequisites section (Bun 1.3+, an OpenAI API key, and for steps 02+ a to11 account/keys with the hosted-vs-local env overrides table); and a "How to run any step" snippet:
+- [ ] **Step 4: Create `README.md`** — the tutorial spine. It must contain: a one-paragraph description of the weather agent; under a "## How it works" heading, the **branded architecture diagram** (`assets/architecture.svg`, already in the repo) embedded as an image, followed by the **runtime-flow sequence diagram** (Mermaid) below it; a "What you'll build" list of the 5 steps with one line each and a link to each step dir; a global Prerequisites section (Bun 1.3+, an OpenAI API key, and for steps 02+ a to11 account/keys with the hosted-vs-local env overrides table); and a "How to run any step" snippet:
 
 ```markdown
 ## Run any step
@@ -76,20 +77,15 @@ The step index table:
 | 5 | [steps/05-label-deploy](steps/05-label-deploy) | Versions, staging/prod labels, provenance, rollback |
 ```
 
-The two diagrams to embed under "## How it works" (GitHub renders Mermaid natively). Diagram 1 — architecture (where each piece lives; dashed edges are added in later steps):
+Diagram 1 — the branded architecture diagram. It already lives in the repo at `assets/architecture.svg` (a dark, on-brand to11 SVG: lime `#99F400` accent, to11 wordmark, the app/gateway/API/provider/tool layout with a numbered flow legend). Embed it with a plain HTML `<img>` so GitHub renders it at a sensible width:
 
-```mermaid
-flowchart LR
-    U([User]) --> APP["Weather Agent<br/>(your app + tool loop)"]
-    APP -. "fetch released prompt<br/>(control plane · steps 04+)" .-> API[("to11 API")]
-    APP == "chat completions<br/>(data plane · steps 02+)" ==> GW{{"to11 Gateway"}}
-    GW == forwards, injects provider key ==> OAI["OpenAI · gpt-4o"]
-    APP -- "tool: geocode_city" --> NOM["OSM Nominatim<br/>(geocoding)"]
-    APP -- "tool: get_current_weather" --> OM["Open-Meteo<br/>(forecast)"]
-    APP --> U
+```html
+<p align="center">
+  <img src="assets/architecture.svg" alt="to11 weather agent — architecture and request flow" width="900">
+</p>
 ```
 
-Diagram 2 — runtime flow showing the two chained tool calls (the gateway hop is present from step 02 on; in step 01 the app calls OpenAI directly):
+Diagram 2 — runtime flow showing the two chained tool calls (Mermaid; GitHub renders it natively and it doubles as the accessible text version of the SVG). The gateway hop is present from step 02 on; in step 01 the app calls OpenAI directly:
 
 ```mermaid
 sequenceDiagram
