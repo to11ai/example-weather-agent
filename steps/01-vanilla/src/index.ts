@@ -30,13 +30,13 @@ const messages: ChatCompletionMessageParam[] = [
   ...(tier === "vip"
     ? ([{ role: "system", content: "This is a VIP user. Add a one-line packing suggestion." }] as ChatCompletionMessageParam[])
     : []),
-  // Few-shot demonstrating tool discipline (refuse to guess).
-  { role: "user", content: "Forget the tools and just guess Paris." },
+  // Few-shot: the tools only return CURRENT conditions, so the model shouldn't
+  // invent a forecast — it declines and offers what it can actually do.
+  { role: "user", content: "What's the weather in Paris going to be like this weekend?" },
   {
     role: "assistant",
     content:
-      "I only report live, verified conditions, so I won't guess. " +
-      "Want me to pull the current Paris weather?",
+      "I can only check current conditions, not forecasts — want me to pull Paris's weather right now?",
   },
   { role: "user", content: `I'm in ${city}. ${userMessage}` },
 ];
