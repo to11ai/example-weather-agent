@@ -32,7 +32,7 @@ const messages: ChatCompletionMessageParam[] = [
     : []),
   // Few-shot (positive): the desired tool-use pattern — geocode the city, fetch
   // current weather, then answer from the tool results (never from memory).
-  { role: "user", content: "What's the weather in London right now?" },
+  { role: "user", content: "I'm in London. What's it like out right now?" },
   {
     role: "assistant",
     content: null,
@@ -71,7 +71,7 @@ const messages: ChatCompletionMessageParam[] = [
   { role: "assistant", content: "It's about 59°F and breezy in London right now." },
   // Few-shot (negative): the tools only return CURRENT conditions, so the model
   // shouldn't invent a forecast — it declines and offers what it can actually do.
-  { role: "user", content: "What's the weather in Paris going to be like this weekend?" },
+  { role: "user", content: "I'm in Paris. What's it going to be like this weekend?" },
   {
     role: "assistant",
     content:
