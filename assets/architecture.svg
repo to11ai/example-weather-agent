@@ -1,0 +1,139 @@
+<svg width="1240" height="720" viewBox="0 0 1240 720" fill="none" xmlns="http://www.w3.org/2000/svg" font-family="'Rubik','Trebuchet MS',ui-sans-serif,system-ui,sans-serif">
+  <defs>
+    <radialGradient id="glowA" cx="72%" cy="16%" r="55%">
+      <stop offset="0%" stop-color="#99F400" stop-opacity="0.10"/>
+      <stop offset="60%" stop-color="#99F400" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowB" cx="18%" cy="86%" r="55%">
+      <stop offset="0%" stop-color="#99F400" stop-opacity="0.07"/>
+      <stop offset="60%" stop-color="#99F400" stop-opacity="0"/>
+    </radialGradient>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 Z" fill="rgba(232,234,237,0.55)"/>
+    </marker>
+    <marker id="arrowLime" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 Z" fill="#99F400"/>
+    </marker>
+    <marker id="arrowTool" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 Z" fill="#6FB8F5"/>
+    </marker>
+  </defs>
+
+  <!-- backdrop -->
+  <rect width="1240" height="720" rx="16" fill="#0B0C0F"/>
+  <rect width="1240" height="720" fill="url(#glowA)"/>
+  <rect width="1240" height="720" fill="url(#glowB)"/>
+
+  <!-- ── header / wordmark ────────────────────────────────────────────── -->
+  <g transform="translate(40,34)">
+    <g transform="translate(0,2) scale(0.105)">
+      <path d="M 73.513 119.954 C 77.379 116.522 82.279 114.638 86.905 114.92 C 91.545 115.19 95.532 117.603 98.218 121.425 C 99.722 123.559 101.227 125.694 102.731 127.829 C 129.816 166.251 156.902 204.674 183.987 243.097 C 185.492 245.231 186.996 247.366 188.501 249.5 C 186.56 247.753 184.619 246.005 182.678 244.258 L 77.865 149.901 C 75.924 148.154 73.983 146.406 72.042 144.659 C 68.566 141.539 66.644 137.294 66.926 132.655 C 67.195 128.028 69.646 123.386 73.513 119.954 Z M 115.06 0.614 C 135.936 -1.442 156.998 1.683 176.379 9.711 C 195.76 17.739 212.862 30.422 226.17 46.638 C 239.478 62.854 248.581 82.102 252.674 102.677 C 256.766 123.251 255.722 144.518 249.633 164.593 C 243.543 184.667 232.596 202.93 217.763 217.764 L 169.443 169.444 C 175.55 157.342 178.992 143.664 178.992 129.183 C 178.992 79.755 138.923 39.686 89.496 39.686 C 40.61 39.686 0.879 78.883 0.016 127.563 L 0 127.563 C 0 106.586 5.174 85.931 15.063 67.431 C 24.951 48.93 39.25 33.154 56.692 21.499 C 74.135 9.844 94.183 2.67 115.06 0.614 Z" fill="#99F400"/>
+    </g>
+    <text x="44" y="29" font-size="30" font-weight="700" letter-spacing="-0.6">
+      <tspan fill="#E8EAED">to</tspan><tspan fill="#99F400">11</tspan>
+    </text>
+  </g>
+  <text x="218" y="55" font-size="15" font-weight="500" fill="rgba(232,234,237,0.72)">Weather agent · request flow</text>
+
+  <!-- ── edges (drawn first, under nodes) ─────────────────────────────── -->
+  <!-- prompt fetch (control plane) -->
+  <path d="M 415 280 C 470 230, 520 215, 575 200" stroke="#99F400" stroke-opacity="0.8" stroke-width="2" stroke-dasharray="6 5" fill="none" marker-end="url(#arrowLime)"/>
+  <!-- user -> agent -->
+  <line x1="172" y1="335" x2="248" y2="335" stroke="rgba(232,234,237,0.55)" stroke-width="2" marker-end="url(#arrow)"/>
+  <!-- agent -> gateway -->
+  <line x1="492" y1="325" x2="576" y2="325" stroke="#99F400" stroke-width="2.2" marker-end="url(#arrowLime)"/>
+  <!-- gateway -> openai -->
+  <line x1="772" y1="325" x2="856" y2="325" stroke="#99F400" stroke-width="2.2" marker-end="url(#arrowLime)"/>
+  <!-- openai -> agent (tool-call loop return) -->
+  <path d="M 958 300 C 958 250, 700 250, 560 250 C 520 250, 500 268, 492 292" stroke="rgba(232,234,237,0.45)" stroke-width="2" stroke-dasharray="2 4" fill="none" marker-end="url(#arrow)"/>
+  <!-- agent -> nominatim -->
+  <line x1="332" y1="392" x2="332" y2="466" stroke="#6FB8F5" stroke-width="2" marker-end="url(#arrowTool)"/>
+  <!-- agent -> open-meteo -->
+  <path d="M 470 392 C 540 430, 600 440, 640 466" stroke="#6FB8F5" stroke-width="2" fill="none" marker-end="url(#arrowTool)"/>
+
+  <!-- ── nodes ────────────────────────────────────────────────────────── -->
+  <!-- User -->
+  <g>
+    <rect x="42" y="300" width="130" height="70" rx="12" fill="#15171B" stroke="rgba(255,255,255,0.10)"/>
+    <text x="107" y="332" text-anchor="middle" font-size="16" font-weight="600" fill="#E8EAED">User</text>
+    <text x="107" y="352" text-anchor="middle" font-size="11" fill="rgba(232,234,237,0.58)" font-family="'IBM Plex Mono',ui-monospace,monospace">city + question</text>
+  </g>
+
+  <!-- Weather Agent -->
+  <g>
+    <rect x="252" y="278" width="240" height="114" rx="14" fill="#15171B" stroke="rgba(255,255,255,0.12)"/>
+    <text x="272" y="312" font-size="17" font-weight="700" fill="#E8EAED">Weather Agent</text>
+    <text x="272" y="334" font-size="12" fill="rgba(232,234,237,0.72)">your app — the tool-use loop</text>
+    <text x="272" y="362" font-size="11" fill="rgba(232,234,237,0.58)" font-family="'IBM Plex Mono',ui-monospace,monospace">call model → run tools →</text>
+    <text x="272" y="378" font-size="11" fill="rgba(232,234,237,0.58)" font-family="'IBM Plex Mono',ui-monospace,monospace">replay until final answer</text>
+  </g>
+
+  <!-- to11 Gateway -->
+  <g>
+    <rect x="578" y="298" width="194" height="74" rx="13" fill="#15171B" stroke="rgba(153,244,0,0.55)" stroke-width="1.5"/>
+    <rect x="578" y="298" width="5" height="74" rx="2.5" fill="#99F400"/>
+    <text x="675" y="328" text-anchor="middle" font-size="16" font-weight="700" fill="#99F400">to11 Gateway</text>
+    <text x="675" y="349" text-anchor="middle" font-size="11" fill="rgba(232,234,237,0.6)" font-family="'IBM Plex Mono',ui-monospace,monospace">data plane · telemetry</text>
+  </g>
+
+  <!-- OpenAI -->
+  <g>
+    <rect x="858" y="298" width="200" height="74" rx="13" fill="#15171B" stroke="rgba(255,255,255,0.10)"/>
+    <text x="958" y="328" text-anchor="middle" font-size="16" font-weight="600" fill="#E8EAED">OpenAI</text>
+    <text x="958" y="349" text-anchor="middle" font-size="11" fill="rgba(232,234,237,0.58)" font-family="'IBM Plex Mono',ui-monospace,monospace">gpt-4o</text>
+  </g>
+
+  <!-- to11 API (prompt store) -->
+  <g>
+    <rect x="578" y="128" width="194" height="74" rx="13" fill="#15171B" stroke="rgba(153,244,0,0.55)" stroke-width="1.5"/>
+    <rect x="578" y="128" width="5" height="74" rx="2.5" fill="#99F400"/>
+    <text x="675" y="158" text-anchor="middle" font-size="16" font-weight="700" fill="#99F400">to11 API</text>
+    <text x="675" y="179" text-anchor="middle" font-size="11" fill="rgba(232,234,237,0.6)" font-family="'IBM Plex Mono',ui-monospace,monospace">prompt store · versions</text>
+  </g>
+
+  <!-- Nominatim -->
+  <g>
+    <rect x="218" y="466" width="232" height="76" rx="13" fill="#15171B" stroke="rgba(255,255,255,0.10)"/>
+    <circle cx="244" cy="492" r="11" fill="rgba(111,184,245,0.16)" stroke="#6FB8F5"/>
+    <text x="244" y="496" text-anchor="middle" font-size="12" font-weight="700" fill="#6FB8F5">1</text>
+    <text x="266" y="496" font-size="15" font-weight="600" fill="#E8EAED">OSM Nominatim</text>
+    <text x="266" y="518" font-size="11" fill="rgba(232,234,237,0.58)" font-family="'IBM Plex Mono',ui-monospace,monospace">tool: geocode_city</text>
+  </g>
+
+  <!-- Open-Meteo -->
+  <g>
+    <rect x="560" y="466" width="232" height="76" rx="13" fill="#15171B" stroke="rgba(255,255,255,0.10)"/>
+    <circle cx="586" cy="492" r="11" fill="rgba(111,184,245,0.16)" stroke="#6FB8F5"/>
+    <text x="586" y="496" text-anchor="middle" font-size="12" font-weight="700" fill="#6FB8F5">2</text>
+    <text x="608" y="496" font-size="15" font-weight="600" fill="#E8EAED">Open-Meteo</text>
+    <text x="608" y="518" font-size="11" fill="rgba(232,234,237,0.58)" font-family="'IBM Plex Mono',ui-monospace,monospace">tool: get_current_weather</text>
+  </g>
+
+  <!-- edge labels -->
+  <text x="470" y="208" font-size="11" fill="#99F400" font-family="'IBM Plex Mono',ui-monospace,monospace">fetch prompt (04+)</text>
+  <text x="534" y="316" font-size="10.5" fill="rgba(232,234,237,0.7)" font-family="'IBM Plex Mono',ui-monospace,monospace" text-anchor="middle">chat</text>
+  <text x="814" y="316" font-size="10.5" fill="rgba(232,234,237,0.7)" font-family="'IBM Plex Mono',ui-monospace,monospace" text-anchor="middle">forward</text>
+  <text x="700" y="244" font-size="10.5" fill="rgba(232,234,237,0.55)" font-family="'IBM Plex Mono',ui-monospace,monospace" text-anchor="middle">tool calls — loop</text>
+
+  <!-- ── legend / flow steps ──────────────────────────────────────────── -->
+  <g transform="translate(880,420)">
+    <rect x="0" y="0" width="320" height="262" rx="14" fill="#0E0F12" stroke="rgba(255,255,255,0.08)"/>
+    <text x="20" y="34" font-size="14" font-weight="700" fill="#E8EAED">The flow</text>
+    <g font-family="'IBM Plex Mono',ui-monospace,monospace" font-size="11.5" fill="rgba(232,234,237,0.78)">
+      <text x="20" y="62"><tspan fill="#99F400">1.</tspan> user asks: "I'm in NYC. Jacket?"</text>
+      <text x="20" y="86"><tspan fill="#99F400">2.</tspan> app fetches released prompt</text>
+      <text x="38" y="102" fill="rgba(232,234,237,0.5)">from to11 (steps 04+)</text>
+      <text x="20" y="126"><tspan fill="#99F400">3.</tspan> app → gateway → gpt-4o</text>
+      <text x="20" y="150"><tspan fill="#6FB8F5">4.</tspan> model calls geocode_city</text>
+      <text x="38" y="166" fill="rgba(232,234,237,0.5)">→ Nominatim → { lat, lon }</text>
+      <text x="20" y="190"><tspan fill="#6FB8F5">5.</tspan> model calls get_current_weather</text>
+      <text x="38" y="206" fill="rgba(232,234,237,0.5)">→ Open-Meteo → conditions</text>
+      <text x="20" y="230"><tspan fill="#99F400">6.</tspan> model returns the final answer</text>
+      <text x="20" y="250" fill="rgba(232,234,237,0.5)">"54°F — bring a light jacket."</text>
+    </g>
+  </g>
+
+  <!-- footnote -->
+  <text x="40" y="648" font-size="11.5" fill="rgba(232,234,237,0.55)" font-family="'IBM Plex Mono',ui-monospace,monospace">Lime = to11.  Gateway hop added in step 02;</text>
+  <text x="40" y="668" font-size="11.5" fill="rgba(232,234,237,0.55)" font-family="'IBM Plex Mono',ui-monospace,monospace">prompt fetched from to11 in step 04.  Two chained tool calls, two providers.</text>
+</svg>
