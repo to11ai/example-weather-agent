@@ -4,15 +4,15 @@
 
 **Goal:** Build a 5-step tutorial monorepo that teaches building a tool-using weather agent and progressively adopting the to11 platform (gateway → connected provider → prompt fetch → label-based deploy).
 
-**Architecture:** A standalone repo with self-contained, runnable snapshot directories under `steps/`. Each step copies the previous step's code forward and changes exactly one thing; the inter-step `diff` is the teaching artifact. TypeScript, run with `tsx`. The agent geocodes a city and reads current weather via keyless Open-Meteo APIs, answering through an OpenAI `gpt-4o` tool-use loop.
+**Architecture:** A standalone repo with self-contained, runnable snapshot directories under `steps/`. Each step copies the previous step's code forward and changes exactly one thing; the inter-step `diff` is the teaching artifact. TypeScript, run with Bun (which executes TypeScript directly and auto-loads `.env`). The agent geocodes a city and reads current weather via keyless Open-Meteo APIs, answering through an OpenAI `gpt-4o` tool-use loop.
 
-**Tech Stack:** TypeScript, `tsx`, `openai` (^4), `@to11ai/sdk`, Open-Meteo public APIs, OpenAI `gpt-4o`, the to11 gateway + control-plane API.
+**Tech Stack:** TypeScript, Bun (runtime + package manager), `openai` (^4), `@to11ai/sdk`, Open-Meteo public APIs, OpenAI `gpt-4o`, the to11 gateway + control-plane API.
 
-**Verification model (read first — this is a tutorial repo, not a service):** There is no unit-test suite; the readable example code *is* the deliverable. The automated gate for every task is `npm install` + `npm run typecheck` (`tsc --noEmit`) passing with no errors. End-to-end runs require live credentials: step 01 runs with an `OPENAI_API_KEY`; steps 02–05 require a reachable to11 instance + keys and are verified manually per the step README. Do not invent vitest/jest tests for the example apps — typecheck + documented manual run is the gate.
+**Verification model (read first — this is a tutorial repo, not a service):** There is no unit-test suite; the readable example code *is* the deliverable. The automated gate for every task is `bun install` + `bun run typecheck` (`tsc --noEmit`) passing with no errors. End-to-end runs require live credentials: step 01 runs with an `OPENAI_API_KEY`; steps 02–05 require a reachable to11 instance + keys and are verified manually per the step README. Do not invent vitest/jest tests for the example apps — typecheck + documented manual run is the gate.
 
 ## Global Constraints
 
-- TypeScript only. Every step: `package.json` with `"type": "module"`, scripts `start` (`tsx --env-file=.env src/index.ts`) and `typecheck` (`tsc --noEmit`); a `tsconfig.json` with `strict: true`, `moduleResolution: "bundler"`, `noEmit: true`.
+- TypeScript only. Every step: `package.json` with `"type": "module"`, scripts `start` (`bun src/index.ts`) and `typecheck` (`tsc --noEmit`); a `tsconfig.json` with `strict: true`, `moduleResolution: "bundler"`, `noEmit: true`.
 - LLM provider is OpenAI `gpt-4o`. Model params: `temperature: 0.3`, `max_tokens: 400`.
 - to11 defaults (overridable via env): gateway (data plane) `TO11_GATEWAY_URL=https://gw.to11.ai/v1`; control-plane API `TO11_API_URL=https://api.to11ai.com`; `TO11_ENV=prod`. Local overrides: gateway `http://localhost:4000/v1`, API `http://localhost:4500`.
 - Two distinct to11 URLs, never conflated: `TO11_GATEWAY_URL` is the OpenAI client `baseURL`; `TO11_API_URL` is `createClient`'s `baseUrl`.
@@ -27,7 +27,7 @@
 ## Task 1: Repo scaffold + tutorial spine
 
 **Files:**
-- Create: `.gitignore`, `LICENSE`, `README.md`, `.env.example`, `steps/.gitkeep`
+- Create: `.gitignore`, `LICENSE`, `README.md`, `steps/.gitkeep`
 
 **Interfaces:**
 - Consumes: nothing (repo currently holds only the design spec on `main`).
@@ -51,36 +51,16 @@ dist/
 
 - [ ] **Step 3: Create `LICENSE`** (MIT, current year, "to11 AI"). Use the standard MIT text with `Copyright (c) 2026 to11 AI`.
 
-- [ ] **Step 4: Create root `.env.example`** (reference copy; each step also ships its own)
-
-```
-# OpenAI provider key (steps 01 and 02 only; removed from step 03 onward)
-OPENAI_API_KEY=
-
-# to11 keys (steps 02+)
-TO11_API_KEY=
-TO11_PROJECT_ID=
-
-# to11 data plane (gateway) — used as the OpenAI client baseURL (steps 02+)
-TO11_GATEWAY_URL=https://gw.to11.ai/v1
-
-# to11 control plane (REST API) — used as createClient baseUrl (steps 04+)
-TO11_API_URL=https://api.to11ai.com
-
-# Serving environment label (steps 02+)
-TO11_ENV=prod
-```
-
-- [ ] **Step 5: Create `README.md`** — the tutorial spine. It must contain: a one-paragraph description of the weather agent; a "What you'll build" list of the 5 steps with one line each and a link to each step dir; a global Prerequisites section (Node 20+, an OpenAI API key, and for steps 02+ a to11 account/keys with the hosted-vs-local env overrides table); and a "How to run any step" snippet:
+- [ ] **Step 4: Create `README.md`** — the tutorial spine. It must contain: a one-paragraph description of the weather agent; the **two Mermaid diagrams below** (architecture + runtime flow) placed near the top under a "## How it works" heading; a "What you'll build" list of the 5 steps with one line each and a link to each step dir; a global Prerequisites section (Bun 1.3+, an OpenAI API key, and for steps 02+ a to11 account/keys with the hosted-vs-local env overrides table); and a "How to run any step" snippet:
 
 ```markdown
 ## Run any step
 
 ```bash
 cd steps/01-vanilla
-npm install
+bun install
 cp .env.example .env   # fill in your keys
-npm start
+bun start
 ```
 ```
 
@@ -96,24 +76,66 @@ The step index table:
 | 5 | [steps/05-label-deploy](steps/05-label-deploy) | Versions, staging/prod labels, provenance, rollback |
 ```
 
-- [ ] **Step 6: Keep `steps/` in git**
+The two diagrams to embed under "## How it works" (GitHub renders Mermaid natively). Diagram 1 — architecture (where each piece lives; dashed edges are added in later steps):
+
+```mermaid
+flowchart LR
+    U([User]) --> APP["Weather Agent<br/>(your app + tool loop)"]
+    APP -. "fetch released prompt<br/>(control plane · steps 04+)" .-> API[("to11 API")]
+    APP == "chat completions<br/>(data plane · steps 02+)" ==> GW{{"to11 Gateway"}}
+    GW == forwards, injects provider key ==> OAI["OpenAI · gpt-4o"]
+    APP -- "tool: geocode_city" --> NOM["OSM Nominatim<br/>(geocoding)"]
+    APP -- "tool: get_current_weather" --> OM["Open-Meteo<br/>(forecast)"]
+    APP --> U
+```
+
+Diagram 2 — runtime flow showing the two chained tool calls (the gateway hop is present from step 02 on; in step 01 the app calls OpenAI directly):
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant App as Weather Agent
+    participant GW as to11 Gateway
+    participant LLM as OpenAI gpt-4o
+    participant Nom as OSM Nominatim
+    participant OM as Open-Meteo
+
+    User->>App: "I'm in New York. Do I need a jacket?"
+    Note over App: fetch released prompt from to11 (steps 04+)
+    App->>GW: chat.completions (messages + tools)
+    GW->>LLM: forward (provider key injected)
+    LLM-->>App: tool_call geocode_city("New York")
+    App->>Nom: GET /search?q=New York
+    Nom-->>App: { lat, lon }
+    App->>GW: chat.completions (+ geocode result)
+    GW->>LLM: forward
+    LLM-->>App: tool_call get_current_weather(lat, lon)
+    App->>OM: GET /forecast?latitude=..&longitude=..
+    OM-->>App: current conditions
+    App->>GW: chat.completions (+ weather result)
+    GW->>LLM: forward
+    LLM-->>App: final answer
+    App-->>User: "It's 54°F in New York — bring a light jacket."
+```
+
+- [ ] **Step 5: Keep `steps/` in git**
 
 ```bash
 mkdir -p steps && touch steps/.gitkeep
 ```
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add .gitignore LICENSE README.md .env.example steps/.gitkeep
-git commit -m "chore: scaffold tutorial repo (README spine, license, env reference)"
+git add .gitignore LICENSE README.md steps/.gitkeep
+git commit -m "chore: scaffold tutorial repo (README spine, license)"
 ```
 
-- [ ] **Step 8: Open PR**
+- [ ] **Step 7: Open PR**
 
 ```bash
 git push -u origin scaffold-tutorial-repo
-gh pr create --title "Scaffold tutorial repo" --body "Repo conventions, tutorial README spine, MIT license, and root .env.example reference. Establishes structure before step code."
+gh pr create --title "Scaffold tutorial repo" --body "Repo conventions, tutorial README spine, and MIT license. Establishes structure before step code."
 ```
 
 ---
@@ -141,15 +163,14 @@ git checkout main && git pull && git checkout -b step-01-vanilla
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "tsx --env-file=.env src/index.ts",
+    "start": "bun src/index.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "openai": "^4"
   },
   "devDependencies": {
-    "@types/node": "^20",
-    "tsx": "^4",
+    "@types/bun": "latest",
     "typescript": "^5"
   }
 }
@@ -164,7 +185,7 @@ git checkout main && git pull && git checkout -b step-01-vanilla
     "module": "ESNext",
     "moduleResolution": "bundler",
     "lib": ["ES2022"],
-    "types": ["node"],
+    "types": ["bun"],
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
@@ -183,21 +204,27 @@ OPENAI_API_KEY=
 - [ ] **Step 5: Create `steps/01-vanilla/src/tools.ts`** (canonical — copied unchanged into every later step)
 
 ```ts
-// Tool implementations: real, keyless public APIs (Open-Meteo).
+// Tool implementations: two distinct, keyless public APIs —
+//   geocode_city          -> OpenStreetMap Nominatim
+//   get_current_weather   -> Open-Meteo
 // Identical across every step of the tutorial.
 
 export async function geocodeCity(args: { name: string }) {
-  const url = new URL("https://geocoding-api.open-meteo.com/v1/search");
-  url.searchParams.set("name", args.name);
-  url.searchParams.set("count", "1");
-  const res = await fetch(url);
+  // Nominatim is keyless but its usage policy REQUIRES a descriptive User-Agent.
+  const url = new URL("https://nominatim.openstreetmap.org/search");
+  url.searchParams.set("q", args.name);
+  url.searchParams.set("format", "json");
+  url.searchParams.set("limit", "1");
+  const res = await fetch(url, {
+    headers: {
+      "User-Agent": "to11-weather-agent-tutorial/1.0 (https://github.com/to11ai/example-weather-agent)",
+    },
+  });
   if (!res.ok) throw new Error(`geocode failed: ${res.status}`);
-  const data = (await res.json()) as {
-    results?: Array<{ latitude: number; longitude: number; name: string }>;
-  };
-  const top = data.results?.[0];
+  const data = (await res.json()) as Array<{ lat: string; lon: string; display_name: string }>;
+  const top = data[0];
   if (!top) throw new Error(`no geocoding result for "${args.name}"`);
-  return { latitude: top.latitude, longitude: top.longitude, name: top.name };
+  return { latitude: Number(top.lat), longitude: Number(top.lon), name: top.display_name };
 }
 
 export async function getCurrentWeather(args: { latitude: number; longitude: number }) {
@@ -326,7 +353,7 @@ main().catch((err) => {
 - [ ] **Step 7: Install and typecheck**
 
 ```bash
-cd steps/01-vanilla && npm install && npm run typecheck
+cd steps/01-vanilla && bun install && bun run typecheck
 ```
 Expected: no TypeScript errors.
 
@@ -334,11 +361,11 @@ Expected: no TypeScript errors.
 
 ```bash
 cp .env.example .env   # put a real OPENAI_API_KEY in it
-npm start
+bun start
 ```
 Expected: two `[tool]` lines (`geocode_city` then `get_current_weather` for New York) followed by `ASSISTANT:` with a one/two-sentence answer mentioning a temperature in °F and a packing suggestion (VIP). If you lack a key, note that this run was skipped.
 
-- [ ] **Step 9: Write `steps/01-vanilla/README.md`** — Diataxis tutorial shape. Sections: **Goal** (run a tool-using weather agent end to end); **Prerequisites** (Node 20+, OpenAI API key); **Steps** (install, copy `.env`, set key, `npm start`); **Expected output** (the tool lines + assistant answer above); **What this step teaches / the pain points** (the prompt and the VIP branch are buried in application code; there is no telemetry on the model call; there is no way to change the prompt without a code deploy or to know which prompt produced which response); **Next** (Step 02 routes the same call through the to11 gateway with zero prompt changes). Keep prose tight.
+- [ ] **Step 9: Write `steps/01-vanilla/README.md`** — Diataxis tutorial shape. Sections: **Goal** (run a tool-using weather agent end to end); **Prerequisites** (Bun 1.3+, OpenAI API key); **Steps** (install, copy `.env`, set key, `bun start`); **Expected output** (the tool lines + assistant answer above); **What this step teaches / the pain points** (the prompt and the VIP branch are buried in application code; there is no telemetry on the model call; there is no way to change the prompt without a code deploy or to know which prompt produced which response); **Next** (Step 02 routes the same call through the to11 gateway with zero prompt changes). Keep prose tight.
 
 - [ ] **Step 10: Commit**
 
@@ -381,7 +408,7 @@ cp -R steps/01-vanilla steps/02-gateway
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "tsx --env-file=.env src/index.ts",
+    "start": "bun src/index.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -389,8 +416,7 @@ cp -R steps/01-vanilla steps/02-gateway
     "@to11ai/sdk": "latest"
   },
   "devDependencies": {
-    "@types/node": "^20",
-    "tsx": "^4",
+    "@types/bun": "latest",
     "typescript": "^5"
   }
 }
@@ -399,9 +425,9 @@ cp -R steps/01-vanilla steps/02-gateway
 - [ ] **Step 3: Verify `@to11ai/sdk` resolves from npm**
 
 ```bash
-cd steps/02-gateway && npm install
+cd steps/02-gateway && bun install
 ```
-Expected: install succeeds and `node_modules/@to11ai/sdk` exists. If the package is NOT published to npm, stop and report — the tutorial's "install from npm" premise needs the package published first (or a documented `npm link`/tarball fallback added to every step README). Do not proceed past this check silently.
+Expected: install succeeds and `node_modules/@to11ai/sdk` exists. If the package is NOT published to the npm registry, stop and report — the tutorial's "install from the registry" premise needs the package published first (or a documented `bun link`/tarball fallback added to every step README). Do not proceed past this check silently.
 
 - [ ] **Step 4: Replace `steps/02-gateway/.env.example`**
 
@@ -459,7 +485,7 @@ Everything else in `main()` (the `while (true)` loop) is identical to step 01.
 - [ ] **Step 6: Typecheck**
 
 ```bash
-npm run typecheck
+bun run typecheck
 ```
 Expected: no errors.
 
@@ -467,11 +493,11 @@ Expected: no errors.
 
 ```bash
 cp .env.example .env   # fill OPENAI_API_KEY, TO11_API_KEY, TO11_PROJECT_ID
-npm start
+bun start
 ```
 Expected: identical assistant behavior to step 01, AND the call now appears as a trace in the to11 dashboard. If no to11 instance is reachable, note the run as skipped.
 
-- [ ] **Step 8: Rewrite `steps/02-gateway/README.md`** — Diataxis tutorial. Sections: **Goal** (route the existing agent through to11 with zero prompt change); **Prerequisites** (step 01 working + a to11 account, API key, project id); **What changed** (only the OpenAI `baseURL` + `gatewayAuthHeaders`; show the ~6-line diff from step 01); **Steps** (fill `.env`, `npm start`); **Expected output** (same answer as step 01); **Payoff** (full request/response telemetry with no prompt changes — point to the dashboard trace and the `x-to11-request-id` response header; explain the two URLs: `TO11_GATEWAY_URL` is the data plane); **Next** (Step 03 moves the provider credential into to11). 
+- [ ] **Step 8: Rewrite `steps/02-gateway/README.md`** — Diataxis tutorial. Sections: **Goal** (route the existing agent through to11 with zero prompt change); **Prerequisites** (step 01 working + a to11 account, API key, project id); **What changed** (only the OpenAI `baseURL` + `gatewayAuthHeaders`; show the ~6-line diff from step 01); **Steps** (fill `.env`, `bun start`); **Expected output** (same answer as step 01); **Payoff** (full request/response telemetry with no prompt changes — point to the dashboard trace and the `x-to11-request-id` response header; explain the two URLs: `TO11_GATEWAY_URL` is the data plane); **Next** (Step 03 moves the provider credential into to11). 
 
 - [ ] **Step 9: Commit and open PR**
 
@@ -543,7 +569,7 @@ The `import` line for `OPENAI_API_KEY` usage is removed; `gatewayAuthHeaders` im
 - [ ] **Step 5: Typecheck**
 
 ```bash
-cd steps/03-connect-provider && npm install && npm run typecheck
+cd steps/03-connect-provider && bun install && bun run typecheck
 ```
 Expected: no errors.
 
@@ -551,7 +577,7 @@ Expected: no errors.
 
 ```bash
 cp .env.example .env   # fill TO11_API_KEY, TO11_PROJECT_ID only
-npm start
+bun start
 ```
 Expected: same assistant answer with NO `OPENAI_API_KEY` in the environment. If you cannot connect a provider, note the run as skipped.
 
@@ -588,8 +614,8 @@ cp -R steps/03-connect-provider steps/04-fetch-prompt
 
 ```json
   "scripts": {
-    "start": "tsx --env-file=.env src/index.ts",
-    "author": "tsx --env-file=.env src/author.ts",
+    "start": "bun src/index.ts",
+    "author": "bun src/author.ts",
     "typecheck": "tsc --noEmit"
   },
 ```
@@ -798,20 +824,20 @@ main().catch((err) => { console.error(err); process.exit(1); });
 - [ ] **Step 6: Typecheck**
 
 ```bash
-cd steps/04-fetch-prompt && npm install && npm run typecheck
+cd steps/04-fetch-prompt && bun install && bun run typecheck
 ```
-Expected: no errors. (If the SDK's `createClient`/`fetch`/`getVersion` signatures differ from those used here, fix the call sites to match the installed `@to11ai/sdk` types — these are the exact symbols verified against the platform js-sdk, but pin to what `npm install` actually provides.)
+Expected: no errors. (If the SDK's `createClient`/`fetch`/`getVersion` signatures differ from those used here, fix the call sites to match the installed `@to11ai/sdk` types — these are the exact symbols verified against the platform js-sdk, but pin to what `bun install` actually provides.)
 
 - [ ] **Step 7: Manual end-to-end run**
 
 ```bash
 cp .env.example .env   # fill TO11_API_KEY, TO11_PROJECT_ID
-npm run author         # one-time: creates the prompt + version + prod label
-npm start              # fetches and runs
+bun run author         # one-time: creates the prompt + version + prod label
+bun start              # fetches and runs
 ```
 Expected: `author` prints `Authored weather-concierge v1 and released to prod.`; `start` prints `Fetched … -> N messages`, the two tool lines, and the assistant answer. Note skipped if no to11 instance.
 
-- [ ] **Step 8: Rewrite `steps/04-fetch-prompt/README.md`** — Diataxis tutorial. Sections: **Goal** (move the prompt out of the app into to11); **Prerequisites** (steps 02–03 working); **Author the prompt** (`npm run author`, explain it runs once and stores persona/rules/VIP block/few-shot/variable schema/model config + tools as a version, then moves the `prod` label); **Run** (`npm start` — explain `fetch()` returns rendered messages and that `modelConfig`/tools come from `getVersion()` because `fetch()` doesn't include them); **What changed** (the prompt text is gone from `index.ts`; introduce `TO11_API_URL` as the control plane vs `TO11_GATEWAY_URL` the data plane); **Next** (Step 05 adds versions, labels, and provenance). 
+- [ ] **Step 8: Rewrite `steps/04-fetch-prompt/README.md`** — Diataxis tutorial. Sections: **Goal** (move the prompt out of the app into to11); **Prerequisites** (steps 02–03 working); **Author the prompt** (`bun run author`, explain it runs once and stores persona/rules/VIP block/few-shot/variable schema/model config + tools as a version, then moves the `prod` label); **Run** (`bun start` — explain `fetch()` returns rendered messages and that `modelConfig`/tools come from `getVersion()` because `fetch()` doesn't include them); **What changed** (the prompt text is gone from `index.ts`; introduce `TO11_API_URL` as the control plane vs `TO11_GATEWAY_URL` the data plane); **Next** (Step 05 adds versions, labels, and provenance). 
 
 - [ ] **Step 9: Commit and open PR**
 
@@ -844,9 +870,9 @@ cp -R steps/04-fetch-prompt steps/05-label-deploy
 
 ```json
   "scripts": {
-    "start": "tsx --env-file=.env src/index.ts",
-    "author": "tsx --env-file=.env src/author.ts",
-    "deploy": "tsx --env-file=.env src/deploy.ts",
+    "start": "bun src/index.ts",
+    "author": "bun src/author.ts",
+    "deploy": "bun src/deploy.ts",
     "typecheck": "tsc --noEmit"
   },
 ```
@@ -866,7 +892,7 @@ const command = process.argv[2]; // "stage-v2" | "promote" | "rollback"
 async function findPrompt() {
   const page = await client.prompts.list({ projectId: TO11_PROJECT_ID! });
   const found = page.items.find((p) => p.slug === SLUG);
-  if (!found) throw new Error(`prompt ${SLUG} not found — run "npm run author" first`);
+  if (!found) throw new Error(`prompt ${SLUG} not found — run "bun run author" first`);
   return found;
 }
 
@@ -893,7 +919,7 @@ async function main() {
       projectId: TO11_PROJECT_ID!, promptId: prompt.id, label: "staging",
       versionId: v2.id, reason: "Stage v2 for testing.",
     });
-    console.log(`Staged v${v2.version} to "staging". Test with: TO11_ENV=staging npm start`);
+    console.log(`Staged v${v2.version} to "staging". Test with: TO11_ENV=staging bun start`);
     return;
   }
 
@@ -901,7 +927,7 @@ async function main() {
     // Find the version currently on `staging` and move `prod` onto it.
     const labels = await client.prompts.listLabels({ projectId: TO11_PROJECT_ID!, promptId: prompt.id });
     const staging = labels.find((l) => l.label === "staging");
-    if (!staging) throw new Error('no "staging" label — run "npm run deploy stage-v2" first');
+    if (!staging) throw new Error('no "staging" label — run "bun run deploy stage-v2" first');
     await client.prompts.moveLabel({
       projectId: TO11_PROJECT_ID!, promptId: prompt.id, label: "prod",
       versionId: staging.versionId, reason: "Promote staging to prod.",
@@ -922,7 +948,7 @@ async function main() {
     return;
   }
 
-  throw new Error('usage: npm run deploy -- <stage-v2|promote|rollback>');
+  throw new Error('usage: bun run deploy <stage-v2|promote|rollback>');
 }
 
 main().catch((err) => { console.error(err); process.exit(1); });
@@ -950,7 +976,7 @@ Everything else in `index.ts` is unchanged from step 04. (`gatewayPromptHeaders(
 - [ ] **Step 5: Typecheck**
 
 ```bash
-cd steps/05-label-deploy && npm install && npm run typecheck
+cd steps/05-label-deploy && bun install && bun run typecheck
 ```
 Expected: no errors.
 
@@ -958,13 +984,13 @@ Expected: no errors.
 
 ```bash
 cp .env.example .env   # fill TO11_API_KEY, TO11_PROJECT_ID
-npm run author                    # if not already authored from step 04's project
-npm run deploy -- stage-v2        # v2 -> staging
-TO11_ENV=staging npm start        # exercise staging
-npm run deploy -- promote         # staging version -> prod
-npm start                         # prod now serves v2
-npm run deploy -- rollback        # prod -> v1, no redeploy
-npm start                         # prod serves v1 again
+bun run author                    # if not already authored from step 04's project
+bun run deploy stage-v2        # v2 -> staging
+TO11_ENV=staging bun start        # exercise staging
+bun run deploy promote         # staging version -> prod
+bun start                         # prod now serves v2
+bun run deploy rollback        # prod -> v1, no redeploy
+bun start                         # prod serves v1 again
 ```
 Expected: each deploy command prints its confirmation; `start` against each label fetches the version that label points at. Note skipped if no to11 instance.
 

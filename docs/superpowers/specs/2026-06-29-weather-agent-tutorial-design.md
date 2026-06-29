@@ -28,14 +28,14 @@ The tutorial's narrative arc:
 | Provider | **OpenAI `gpt-4o`** | Matches the prototype exactly; gateway is OpenAI-compatible. |
 | to11 target | **Hosted (`gw.to11.ai`) by default**, with env-var overrides to repoint local | Lightest setup for a public tutorial; overrides keep self-hosting reproducible. |
 | Steps | **5 steps**, one snapshot dir each | Smoothest learning curve; each step adds exactly one layer. |
-| Structure | **Self-contained dirs**, npm, no workspace; tool code duplicated per step | Each step runs standalone (`cd steps/NN-* && npm i && npm start`); diffs isolate the to11 change. Clarity over DRY. |
+| Structure | **Self-contained dirs**, Bun, no workspace; tool code duplicated per step | Each step runs standalone (`cd steps/NN-* && bun install && bun start`); diffs isolate the to11 change. Clarity over DRY. Bun matches the platform (`bun.lock`/Turbo) and runs TypeScript directly. |
 | Delivery | **Scaffold first, then one PR per step** | See Delivery Plan. |
 
 ## Repo layout
 
 ```
 example-weather-agent/
-  README.md                 # tutorial spine: motivation + step index + global prereqs
+  README.md                 # tutorial spine: motivation + architecture & flow diagrams (Mermaid) + step index + global prereqs
   .gitignore  LICENSE  .env.example
   docs/superpowers/specs/2026-06-29-weather-agent-tutorial-design.md
   steps/
@@ -49,7 +49,7 @@ example-weather-agent/
 Each `steps/NN-*/` contains:
 
 - `README.md` — Diataxis **tutorial** shape: goal → prerequisites → steps → run command → expected output → "what changed from the previous step" → "next".
-- `package.json` — deps (`openai`, and `@to11ai/sdk` from step 02+, `tsx`, `typescript`); scripts: `start`, `typecheck`.
+- `package.json` — deps (`openai`, and `@to11ai/sdk` from step 02+; dev: `typescript`, `@types/bun`); scripts: `start`, `typecheck`.
 - `tsconfig.json`.
 - `.env.example`.
 - `src/index.ts` — the app: env wiring, the tool-use loop, entry point.
@@ -60,9 +60,10 @@ No root workspace; each directory installs and runs on its own.
 
 ## The agent (shared behavior across all steps)
 
-- **Tools** (real, keyless Open-Meteo endpoints, independently verifiable):
-  - `geocode_city({ name })` → `{ latitude, longitude, name }` via `geocoding-api.open-meteo.com/v1/search`.
-  - `get_current_weather({ latitude, longitude })` → current conditions via `api.open-meteo.com/v1/forecast`.
+- **Tools** (two distinct, keyless public APIs — independently verifiable; two providers makes the multi-tool story explicit):
+  - `geocode_city({ name })` → `{ latitude, longitude, name }` via OpenStreetMap **Nominatim** (`nominatim.openstreetmap.org/search`; requires a descriptive `User-Agent` header per its usage policy).
+  - `get_current_weather({ latitude, longitude })` → current conditions via **Open-Meteo** (`api.open-meteo.com/v1/forecast`).
+  - The two calls are **chained**: the model feeds `geocode_city`'s lat/lon into `get_current_weather` — that dependency is the core tool-loop lesson.
 - **Prompt content** (persona, operating rules, VIP conditional, few-shot discipline example, templated user turn) as defined in the prototype's `author.ts`. In steps 01–03 this is assembled inline in app code; from step 04 it lives only in to11.
 - **Tool-use loop**: stateless replay — call the model, append the assistant turn, execute any requested tools against the live API, append tool results, repeat until the model returns a final answer.
 
@@ -85,13 +86,13 @@ Author a v2 of the prompt; deploy it to the `staging` label, test against `stagi
 
 ## Conventions
 
-- **Env loading:** `tsx --env-file=.env`. Each step ships `.env.example`; `.env` is gitignored.
+- **Env loading:** Bun auto-loads `.env`. Each step ships `.env.example`; `.env` is gitignored.
 - **Two distinct to11 URLs**, made explicit in every README and `.env.example` from the step that introduces each:
   - `TO11_GATEWAY_URL` — **data plane**; used as the OpenAI client `baseURL` (default `https://gw.to11.ai/v1`).
   - `TO11_API_URL` — **control plane**; used as `createClient`'s `baseUrl` for `prompts.*` (introduced in step 04).
   Conflating these is the most likely learner trip-wire; READMEs call it out.
 - **README style:** Diataxis tutorial (see per-step contents above).
-- **Run command:** every step runs with `npm start` (→ `tsx --env-file=.env src/index.ts`); steps 04–05 add `npm run author`.
+- **Run command:** every step runs with `bun start` (→ `bun src/index.ts`); steps 04–05 add `bun run author`, step 05 adds `bun run deploy`.
 
 ## Delivery plan
 
