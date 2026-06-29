@@ -5,17 +5,22 @@ import type {
 } from "openai/resources/chat/completions";
 import { TOOL_IMPLS } from "./tools";
 
-// No OPENAI_API_KEY here — to11 holds the OpenAI credential (connected provider)
-// and injects it upstream. The app only needs its to11 key + project.
-const { TO11_API_KEY, TO11_PROJECT_ID } = process.env;
-if (!TO11_API_KEY || !TO11_PROJECT_ID)
-	throw new Error("set TO11_API_KEY and TO11_PROJECT_ID");
+// No OPENAI_API_KEY here — to11 holds the OpenAI credential (connected provider).
+// Because the app sends no provider key, it must name WHICH connected provider to
+// use: TO11_PROVIDER is that provider's slug (e.g. "openai-01sj").
+const { TO11_API_KEY, TO11_PROJECT_ID, TO11_PROVIDER } = process.env;
+if (!TO11_API_KEY || !TO11_PROJECT_ID || !TO11_PROVIDER)
+	throw new Error("set TO11_API_KEY, TO11_PROJECT_ID, and TO11_PROVIDER");
 
 // Optional overrides — set these in .env (Bun auto-loads it) to point at a local
 // or self-hosted to11; otherwise fall back to the hosted defaults.
 const TO11_GATEWAY_URL =
 	process.env.TO11_GATEWAY_URL ?? "https://gw.to11.ai/v1";
 const TO11_ENV = process.env.TO11_ENV ?? "prod";
+
+// Route to that connected provider via the gateway's "<provider>::<model>"
+// convention — e.g. TO11_PROVIDER=openai-01sj -> model "openai-01sj::gpt-4o".
+const MODEL = `${TO11_PROVIDER}::gpt-4o`;
 
 // Without prompt management, the prompt lives in application code.
 const assistantName = "Nigel";
@@ -153,7 +158,7 @@ async function main() {
 
 	while (true) {
 		const response = await openai.chat.completions.create({
-			model: "gpt-4o",
+			model: MODEL,
 			messages,
 			tools,
 			tool_choice: "auto",

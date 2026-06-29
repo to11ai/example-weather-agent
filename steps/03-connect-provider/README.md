@@ -28,7 +28,7 @@ non-empty `apiKey` string, so we pass the to11 key (the real auth is the
 `x-to11-authorization` header):
 
 ```ts
-const { TO11_API_KEY, TO11_PROJECT_ID } = process.env;
+const { TO11_API_KEY, TO11_PROJECT_ID, TO11_PROVIDER } = process.env;
 // ...
 const openai = new OpenAI({
   baseURL: TO11_GATEWAY_URL,
@@ -41,11 +41,30 @@ const openai = new OpenAI({
 });
 ```
 
+## Route to your connected provider (required)
+
+Because the app no longer sends a provider key, it has to tell the gateway **which**
+connected provider's stored credential to use. You do that with the connection's **slug**
+(the label you gave it when connecting, e.g. `openai-01sj`) via the gateway's
+`"<slug>::<model>"` model-prefix convention — the app sends `model: "openai-01sj::gpt-4o"`.
+The slug comes from a **required** env var:
+
+```ts
+const { TO11_API_KEY, TO11_PROJECT_ID, TO11_PROVIDER } = process.env;
+// ...
+const MODEL = `${TO11_PROVIDER}::gpt-4o`;
+await openai.chat.completions.create({ model: MODEL, /* ... */ });
+```
+
+Set `TO11_PROVIDER` in `.env` to your connection's slug. (The gateway also accepts a
+catalog-level `x-genai-provider: openai` header, but that selects a provider *type*, not a
+*specific* connection — the model prefix does.)
+
 ## Steps
 
 ```bash
 bun install
-cp .env.example .env        # set TO11_API_KEY and TO11_PROJECT_ID only — no OpenAI key
+cp .env.example .env        # set TO11_API_KEY, TO11_PROJECT_ID, and TO11_PROVIDER (no OpenAI key)
 bun start
 ```
 
