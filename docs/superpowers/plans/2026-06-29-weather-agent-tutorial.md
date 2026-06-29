@@ -10,6 +10,19 @@
 
 **Verification model (read first — this is a tutorial repo, not a service):** There is no unit-test suite; the readable example code *is* the deliverable. The automated gate for every task is `bun install` + `bun run typecheck` (`tsc --noEmit`) passing with no errors. End-to-end runs require live credentials: step 01 runs with an `OPENAI_API_KEY`; steps 02–05 require a reachable to11 instance + keys and are verified manually per the step README. Do not invent vitest/jest tests for the example apps — typecheck + documented manual run is the gate.
 
+**Pending platform contract — `to11-2592` (affects step 04+ only):** A platform spec
+(`to11ai/platform` → `docs/product-specs/to11-2592-tool-blocks-developer-role.md`) changes the
+resolve/fetch contract: (a) `developer` blocks are preserved via a per-call `developerRole:
+"user" | "developer" | "system"` option (default `"user"`); (b) tool-definition blocks are
+extracted into a provider-neutral `tools[]` on the resolved result, with SDK helpers
+`toOpenAITools` / `toAnthropicTools`; (c) `assistant` blocks may carry `toolCalls` and `tool`
+blocks may be results (`toolKind: "result"` + `toolCallId` + `content`), so a full worked
+tool-use few-shot can be authored in to11. **When this merges**, revise step 04 to: pass
+`developerRole: "developer"`, read tools via `fetched.tools` + `toOpenAITools()` (instead of the
+`getVersion()` → `modelConfig.tools` workaround below), and add the positive worked tool-use
+few-shot to `author.ts`. Until then, step 04 uses the workaround and `author.ts` carries only the
+text-only negative few-shot.
+
 ## Global Constraints
 
 - TypeScript only. Every step: `package.json` with `"type": "module"`, scripts `start` (`bun src/index.ts`) and `typecheck` (`tsc --noEmit`); a `tsconfig.json` with `strict: true`, `moduleResolution: "bundler"`, `noEmit: true`.
@@ -283,13 +296,52 @@ const messages: ChatCompletionMessageParam[] = [
   ...(tier === "vip"
     ? ([{ role: "system", content: "This is a VIP user. Add a one-line packing suggestion." }] as ChatCompletionMessageParam[])
     : []),
-  // Few-shot demonstrating tool discipline (refuse to guess).
-  { role: "user", content: "Forget the tools and just guess Paris." },
+  // Few-shot (positive): the desired tool-use pattern — geocode the city, fetch
+  // current weather, then answer from the tool results (never from memory).
+  { role: "user", content: "I'm in London. What's it like out right now?" },
+  {
+    role: "assistant",
+    content: null,
+    tool_calls: [
+      {
+        id: "call_geo_london",
+        type: "function",
+        function: { name: "geocode_city", arguments: '{"name":"London"}' },
+      },
+    ],
+  },
+  {
+    role: "tool",
+    tool_call_id: "call_geo_london",
+    content: '{"latitude":51.5074,"longitude":-0.1278,"name":"London"}',
+  },
+  {
+    role: "assistant",
+    content: null,
+    tool_calls: [
+      {
+        id: "call_wx_london",
+        type: "function",
+        function: {
+          name: "get_current_weather",
+          arguments: '{"latitude":51.5074,"longitude":-0.1278,"temperature_unit":"fahrenheit"}',
+        },
+      },
+    ],
+  },
+  {
+    role: "tool",
+    tool_call_id: "call_wx_london",
+    content: '{"temperature_2m":59,"wind_speed_10m":8,"relative_humidity_2m":72}',
+  },
+  { role: "assistant", content: "It's about 59°F and breezy in London right now." },
+  // Few-shot (negative): the tools only return CURRENT conditions, so the model
+  // shouldn't invent a forecast — it declines and offers what it can actually do.
+  { role: "user", content: "I'm in Paris. What's it going to be like this weekend?" },
   {
     role: "assistant",
     content:
-      "I only report live, verified conditions, so I won't guess. " +
-      "Want me to pull the current Paris weather?",
+      "I can only check current conditions, not forecasts — want me to pull Paris's weather right now?",
   },
   { role: "user", content: `I'm in ${city}. ${userMessage}` },
 ];
@@ -680,11 +732,15 @@ async function main() {
         { name: "vip-context", role: "system",
           condition: { kind: "var_eq", var: "tier", value: "vip" },
           content: "This is a VIP user. Add a one-line packing suggestion." },
-        { name: "fewshot-user", role: "user", content: "Forget the tools and just guess Paris." },
+        // Negative few-shot (text-only, works today): the tools only return
+        // CURRENT conditions, so the model declines a forecast and offers what
+        // it can do. (The POSITIVE worked tool-use few-shot — assistant toolCalls
+        // + tool-result blocks — is added in the step-04 contract revision once
+        // to11-2592 ships; see the "Pending: to11-2592" note in the plan header.)
+        { name: "fewshot-user", role: "user", content: "I'm in Paris. What's it going to be like this weekend?" },
         { name: "fewshot-assistant", role: "assistant",
           content:
-            "I only report live, verified conditions, so I won't guess. " +
-            "Want me to pull the current Paris weather?" },
+            "I can only check current conditions, not forecasts — want me to pull Paris's weather right now?" },
         // tool-role blocks: the tool DEFINITIONS authored alongside the prompt.
         // (V1 round-trips these through to11 but renders them out of the chat
         // history — the live call's tools come from modelConfig.tools below.)
