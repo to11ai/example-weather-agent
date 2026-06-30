@@ -26,6 +26,11 @@ cp .env.example .env        # TO11_API_KEY, TO11_PROJECT_ID, TO11_PROVIDER, TO11
 bun run author              # creates the prompt + version, releases it to `prod`
 ```
 
+`author` is **idempotent**: it upserts the prompt by slug and only creates a new version
+when the content actually changed (it stamps a content fingerprint into the changelog and
+reuses a matching version). Re-running with unchanged content is a no-op that just keeps
+`prod` pointed at the right version.
+
 `author.ts` is the **only** place prompt text lives. It stores a chat template that
 exercises all **five to11 block roles** plus a conditional block:
 
