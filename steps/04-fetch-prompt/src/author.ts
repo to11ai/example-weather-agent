@@ -47,7 +47,6 @@ function fingerprint(value: unknown): string {
 		.slice(0, 12);
 }
 
-// Reuse the prompt if its slug already exists, else create it.
 async function upsertPrompt() {
 	const existing = await client.prompts.list({ projectId: TO11_PROJECT_ID });
 	const found = existing.items.find((p) => p.slug === SLUG);
@@ -62,12 +61,9 @@ async function upsertPrompt() {
 }
 
 async function main() {
-	// 1. Stable prompt identity (upsert — safe to re-run).
 	const prompt = await upsertPrompt();
 
-	// 2. The version payload. The template exercises all FIVE to11 block roles —
-	//    system, developer, user, assistant, tool — plus a VIP conditional block.
-	//    Tool-definition blocks are lifted onto the fetched result's `tools`.
+	// The template exercises all five block roles + a VIP conditional block.
 	const templateJson = {
 		messages: [
 			{
@@ -91,6 +87,8 @@ async function main() {
 			{
 				name: "vip-context",
 				role: "system",
+				// expr is the only shape the renderer evaluates; the editor's group
+				// shape never renders (to11 TO11-2595).
 				condition: {
 					kind: "expr",
 					ast: { op: "==", left: { var: "tier" }, right: { literal: "vip" } },
@@ -150,13 +148,11 @@ async function main() {
 			city: { type: "string" },
 			units: { type: "string", enum: ["fahrenheit", "celsius"] },
 			user_message: { type: "string" },
-			tier: { type: "string", enum: ["standard", "vip"] },
 		},
 	};
 	const modelConfig = { model: "gpt-4o", temperature: 0.3, max_tokens: 400 };
 
-	// 3. Idempotent version: reuse a version that already carries this exact
-	//    content (matched by the fingerprint stamped into its changelog).
+	// Reuse a version already carrying this content (fingerprint in the changelog).
 	const fp = fingerprint({ templateJson, variablesSchema, modelConfig });
 	const versions = await client.prompts.listVersions({
 		projectId: TO11_PROJECT_ID,
@@ -177,7 +173,6 @@ async function main() {
 			changelog: `Weather concierge: five-role template + geocode/forecast tools. (fp:${fp})`,
 		}));
 
-	// 4. Release: ensure the `prod` label points at this version (idempotent).
 	await client.prompts.moveLabel({
 		projectId: TO11_PROJECT_ID,
 		promptId: prompt.id,

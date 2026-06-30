@@ -52,12 +52,13 @@ The app:
 
 ```ts
 const fetched = await to11.prompts.fetch("weather-concierge", {
-  developerRole: "developer",          // keep the developer block as a developer message
-  variables: { assistant_name: "Nigel", city: "New York", units: "fahrenheit", tier: "vip",
-               user_message: "Do I need a jacket?" },
+  developerRole: "developer",
+  variables: { assistant_name: "Nigel", city: "New York", units: "fahrenheit",
+               user_message: "Do I need a jacket?" },   // {{ }} substitution
+  context: { tier: "vip" },                             // conditional-block facts
 });
-const messages = toOpenAIMessages(fetched.messages);  // OpenAI-ready (incl. developer role)
-const tools = toOpenAITools(fetched.tools);           // from the authored tool blocks
+const messages = toOpenAIMessages(fetched.messages);    // OpenAI-ready (incl. developer role)
+const tools = toOpenAITools(fetched.tools);             // from the authored tool blocks
 ```
 
 - **`developerRole: "developer"`** keeps the authored `developer` rules as a `developer`
@@ -69,6 +70,9 @@ const tools = toOpenAITools(fetched.tools);           // from the authored tool 
 - Model params (`model`, `temperature`, `max_tokens`) come from the version's `modelConfig`
   via `getVersion`. The model is prefixed with your provider slug for routing:
   `` `${TO11_PROVIDER}::${cfg.model}` `` (step 03's mechanism).
+- **`variables` vs `context`:** `variables` fill `{{ }}` placeholders; `context` holds the
+  facts conditional blocks evaluate against (the VIP block gates on `context.tier`). They're
+  separate inputs — a condition can't read a template variable.
 
 ## Two URLs
 

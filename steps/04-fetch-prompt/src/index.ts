@@ -32,7 +32,6 @@ const TO11_ENV = process.env.TO11_ENV ?? "prod";
 const SLUG = "weather-concierge";
 
 async function main() {
-	// Control-plane client — for fetching the released prompt + its version.
 	const to11 = createClient({
 		baseUrl: TO11_API_URL,
 		apiKey: TO11_API_KEY,
@@ -40,22 +39,19 @@ async function main() {
 		env: TO11_ENV,
 	});
 
-	// 1. Fetch the released prompt. developerRole:"developer" keeps the authored
-	//    `developer` operating-rules block as a developer message (instead of
-	//    folding it to user) for providers that support the role.
+	// developerRole keeps the authored `developer` block as a developer message.
 	const fetched = await to11.prompts.fetch(SLUG, {
 		developerRole: "developer",
 		variables: {
 			assistant_name: "Nigel",
 			city: "New York",
 			units: "fahrenheit",
-			tier: "vip",
 			user_message: "Do I need a jacket?",
 		},
+		// Conditions evaluate against `context`, not `variables`.
+		context: { tier: "vip" },
 	});
 
-	// 2. Model params come from the version's modelConfig (freeform). Tools come
-	//    from the authored tool-definition blocks, lifted onto fetched.tools.
 	const version = await to11.prompts.getVersion({
 		projectId: TO11_PROJECT_ID,
 		promptId: fetched.promptId,
@@ -67,14 +63,11 @@ async function main() {
 		max_tokens?: number;
 	};
 
-	// 3. Convert the fetched prompt to OpenAI shape — messages (incl. the
-	//    developer role) and tools (from the authored tool blocks).
 	const messages = toOpenAIMessages(
 		fetched.messages,
 	) as unknown as ChatCompletionMessageParam[];
 	const tools = toOpenAITools(fetched.tools) as unknown as ChatCompletionTool[];
 
-	// 4. Route through the gateway to the connected provider (TO11_PROVIDER slug).
 	const openai = new OpenAI({
 		baseURL: TO11_GATEWAY_URL,
 		apiKey: TO11_API_KEY,
