@@ -1,0 +1,18 @@
+{
+	"name": "weather-agent-04-fetch-prompt",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"start": "bun src/index.ts",
+		"author": "bun src/author.ts",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"openai": "^4",
+		"@to11ai/sdk": "^0.7.0"
+	},
+	"devDependencies": {
+		"@types/bun": "latest",
+		"typescript": "^5"
+	}
+}
