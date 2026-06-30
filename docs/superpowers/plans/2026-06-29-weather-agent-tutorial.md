@@ -27,7 +27,7 @@ text-only negative few-shot.
 
 - TypeScript only. Every step: `package.json` with `"type": "module"`, scripts `start` (`bun src/index.ts`) and `typecheck` (`tsc --noEmit`); a `tsconfig.json` with `strict: true`, `moduleResolution: "bundler"`, `noEmit: true`.
 - LLM provider is OpenAI `gpt-4o`. Model params: `temperature: 0.3`, `max_tokens: 400`.
-- to11 defaults (overridable via env): gateway (data plane) `TO11_GATEWAY_URL=https://gw.to11.ai/v1`; control-plane API `TO11_API_URL=https://api.to11ai.com`; `TO11_ENV=prod`. Local overrides: gateway `http://localhost:4000/v1`, API `http://localhost:4500`.
+- to11 endpoints (env-configurable; hosted defaults): gateway (data plane) `TO11_GATEWAY_URL=https://gw.to11.ai/v1`; control-plane API `TO11_API_URL=https://api.to11.ai`; `TO11_ENV=prod`. No `localhost` — there is no public "local to11".
 - Two distinct to11 URLs, never conflated: `TO11_GATEWAY_URL` is the OpenAI client `baseURL`; `TO11_API_URL` is `createClient`'s `baseUrl`.
 - Gateway auth is plain headers set inline on the OpenAI client — `x-to11-authorization: Bearer <to11 key>`, `x-to11-project-id`, `x-to11-env`. Steps 02–03 do this with **no to11 SDK** (routing a call needs only the OpenAI SDK + headers). From step 04 the SDK is a dependency, so its `gatewayAuthHeaders`/`gatewayPromptHeaders` helpers may be used instead of inline headers; step 05 uses `gatewayPromptHeaders(fetched)` for prompt provenance.
 - `prompts.fetch()` returns rendered messages only; `modelConfig` (incl. tool schemas) comes from a separate `prompts.getVersion(...)` call. `modelConfig` is typed `unknown`; store `{ model, temperature, max_tokens, tools }` in it at author time and cast on read.
@@ -500,7 +500,7 @@ TO11_PROJECT_ID=
 TO11_GATEWAY_URL=https://gw.to11.ai/v1
 TO11_ENV=prod
 ```
-(Note: use `https://gw.to11.ai/v1` if that is the host your to11 dashboard shows; confirm against the dashboard. Local: `http://localhost:4000/v1`.)
+(Note: use `https://gw.to11.ai/v1` if that is the host your to11 dashboard shows; confirm against the dashboard.)
 
 - [ ] **Step 5: Edit `steps/02-gateway/src/index.ts`** — change only the env wiring and client construction. The `messages`, `tools`, and loop body are unchanged from step 01. Replace the top of the file (imports + env + the `new OpenAI(...)` line) with:
 
@@ -685,17 +685,16 @@ cp -R steps/03-connect-provider steps/04-fetch-prompt
 TO11_API_KEY=
 TO11_PROJECT_ID=
 TO11_GATEWAY_URL=https://gw.to11.ai/v1
-TO11_API_URL=https://api.to11ai.com
+TO11_API_URL=https://api.to11.ai
 TO11_ENV=prod
 ```
-(Local control plane: `http://localhost:4500`.)
 
 - [ ] **Step 4: Create `steps/04-fetch-prompt/src/author.ts`** (run once; not in the request path)
 
 ```ts
 import { createClient } from "@to11ai/sdk";
 
-const { TO11_API_KEY, TO11_PROJECT_ID, TO11_API_URL = "https://api.to11ai.com" } = process.env;
+const { TO11_API_KEY, TO11_PROJECT_ID, TO11_API_URL = "https://api.to11.ai" } = process.env;
 if (!TO11_API_KEY || !TO11_PROJECT_ID) throw new Error("set TO11_API_KEY and TO11_PROJECT_ID");
 
 const client = createClient({ baseUrl: TO11_API_URL, apiKey: TO11_API_KEY, projectId: TO11_PROJECT_ID });
@@ -821,7 +820,7 @@ const {
   TO11_API_KEY,
   TO11_PROJECT_ID,
   TO11_GATEWAY_URL = "https://gw.to11.ai/v1",
-  TO11_API_URL = "https://api.to11ai.com",
+  TO11_API_URL = "https://api.to11.ai",
   TO11_ENV = "prod",
 } = process.env;
 if (!TO11_API_KEY || !TO11_PROJECT_ID) throw new Error("set TO11_API_KEY and TO11_PROJECT_ID");
@@ -964,7 +963,7 @@ cp -R steps/04-fetch-prompt steps/05-label-deploy
 ```ts
 import { createClient } from "@to11ai/sdk";
 
-const { TO11_API_KEY, TO11_PROJECT_ID, TO11_API_URL = "https://api.to11ai.com" } = process.env;
+const { TO11_API_KEY, TO11_PROJECT_ID, TO11_API_URL = "https://api.to11.ai" } = process.env;
 if (!TO11_API_KEY || !TO11_PROJECT_ID) throw new Error("set TO11_API_KEY and TO11_PROJECT_ID");
 
 const client = createClient({ baseUrl: TO11_API_URL, apiKey: TO11_API_KEY, projectId: TO11_PROJECT_ID });
