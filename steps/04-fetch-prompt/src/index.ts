@@ -26,7 +26,7 @@ const TO11_PROVIDER = required("TO11_PROVIDER"); // connected provider slug, e.g
 // Optional overrides — set in .env to point at a local/self-hosted to11.
 const TO11_GATEWAY_URL =
 	process.env.TO11_GATEWAY_URL ?? "https://gw.to11.ai/v1"; // data plane
-const TO11_API_URL = process.env.TO11_API_URL ?? "https://api.to11ai.com"; // control plane
+const TO11_API_URL = process.env.TO11_API_URL ?? "https://api.to11.ai"; // control plane
 const TO11_ENV = process.env.TO11_ENV ?? "prod";
 
 const SLUG = "weather-concierge";

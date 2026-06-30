@@ -68,7 +68,7 @@ const tools = toOpenAITools(fetched.tools);           // from the authored tool 
 ## Two URLs
 
 - `TO11_API_URL` — **control plane** (REST API); `createClient`'s `baseUrl`, used to fetch
-  the prompt. Hosted `https://api.to11ai.com`, local `http://localhost:4500`.
+  the prompt. Hosted `https://api.to11.ai`, local `http://localhost:4500`.
 - `TO11_GATEWAY_URL` — **data plane** (gateway); the OpenAI client `baseURL`, used for the
   model call. Hosted `https://gw.to11.ai/v1`, local `http://localhost:4000/v1`. Different
   services — don't mix them.

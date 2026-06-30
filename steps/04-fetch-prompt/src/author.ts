@@ -13,7 +13,7 @@ function required(name: string): string {
 
 const TO11_API_KEY = required("TO11_API_KEY");
 const TO11_PROJECT_ID = required("TO11_PROJECT_ID");
-const TO11_API_URL = process.env.TO11_API_URL ?? "https://api.to11ai.com";
+const TO11_API_URL = process.env.TO11_API_URL ?? "https://api.to11.ai";
 
 const client = createClient({
 	baseUrl: TO11_API_URL,
@@ -21,15 +21,26 @@ const client = createClient({
 	projectId: TO11_PROJECT_ID,
 });
 
-async function main() {
-	// 1. Stable prompt identity.
-	const prompt = await client.prompts.create({
+const SLUG = "weather-concierge";
+
+// Idempotent: reuse the prompt if its slug already exists, else create it — so
+// re-running `bun run author` doesn't fail on a duplicate slug.
+async function upsertPrompt() {
+	const existing = await client.prompts.list({ projectId: TO11_PROJECT_ID });
+	const found = existing.items.find((p) => p.slug === SLUG);
+	if (found) return found;
+	return client.prompts.create({
 		projectId: TO11_PROJECT_ID,
 		name: "Weather Concierge",
-		slug: "weather-concierge",
+		slug: SLUG,
 		description: "Tool-using weather assistant.",
 		tags: ["demo", "weather"],
 	});
+}
+
+async function main() {
+	// 1. Stable prompt identity (upsert — safe to re-run).
+	const prompt = await upsertPrompt();
 
 	// 2. A version. The template exercises all FIVE to11 block roles —
 	//    system, developer, user, assistant, tool — and a VIP conditional block.
@@ -62,7 +73,10 @@ async function main() {
 				{
 					name: "vip-context",
 					role: "system",
-					condition: { kind: "var_eq", var: "tier", value: "vip" },
+					condition: {
+						kind: "expr",
+						ast: { op: "==", left: { var: "tier" }, right: { literal: "vip" } },
+					},
 					content: "This is a VIP user. Add a one-line packing suggestion.",
 				},
 				{
