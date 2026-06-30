@@ -51,8 +51,7 @@ the call shows up as a **trace in the to11 dashboard**, and the HTTP response ca
 ## Two URLs, don't mix them
 
 - `TO11_GATEWAY_URL` — the **data plane**. It's an OpenAI-compatible endpoint; it's the
-  OpenAI client's `baseURL`. Hosted default `https://gw.to11.ai/v1`; local
-  `http://localhost:4000/v1`.
+  OpenAI client's `baseURL`. Default `https://gw.to11.ai/v1`.
 - (Introduced in step 04: `TO11_API_URL`, the **control plane** REST API for prompt
   management — a *different* host. Don't point one at the other.)
 

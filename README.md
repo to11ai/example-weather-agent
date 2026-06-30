@@ -61,16 +61,16 @@ Five steps, each adding exactly one layer:
 - An **OpenAI API key** (used directly in step 01; routed through to11 from step 02).
 - From **step 02 on**, a **to11 account** with an API key and a project id.
 
-### Hosted vs. local to11
+### to11 endpoints
 
-Steps 02+ default to **hosted to11**. To run against a local self-hosted platform instead,
-override these environment variables (each step's `.env.example` lists the ones it needs):
+Steps 02+ use **hosted to11**. Two env vars point at it (defaults shown; each step's
+`.env.example` lists the ones it needs):
 
-| Variable | Purpose | Hosted default | Local |
-|----------|---------|----------------|-------|
-| `TO11_GATEWAY_URL` | Data plane — the OpenAI client `baseURL` | `https://gw.to11.ai/v1` | `http://localhost:4000/v1` |
-| `TO11_API_URL` | Control plane — `createClient` `baseUrl` (steps 04+) | `https://api.to11ai.com` | `http://localhost:4500` |
-| `TO11_ENV` | Serving environment label | `prod` | `prod` |
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `TO11_GATEWAY_URL` | Data plane — the OpenAI client `baseURL` | `https://gw.to11.ai/v1` |
+| `TO11_API_URL` | Control plane — `createClient` `baseUrl` (steps 04+) | `https://api.to11.ai` |
+| `TO11_ENV` | Serving environment label | `prod` |
 
 > `TO11_GATEWAY_URL` (data plane) and `TO11_API_URL` (control plane) are **different
 > services** — don't point one at the other.
