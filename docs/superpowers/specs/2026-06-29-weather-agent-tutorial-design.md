@@ -26,7 +26,7 @@ The tutorial's narrative arc:
 |---|---|---|
 | Language | **TypeScript only** | The JS SDK is the complete path (`fetch()`, project-scoped `createClient`, gateway helpers). The Python SDK lacks `fetch()` and `project_id`/`env` on `create_client`, which would force divergence in the final step. |
 | Provider | **OpenAI `gpt-4o`** | Matches the prototype exactly; gateway is OpenAI-compatible. |
-| to11 target | **Hosted (`gw.to11.ai`) by default**, with env-var overrides to repoint local | Lightest setup for a public tutorial; overrides keep self-hosting reproducible. |
+| to11 target | **Hosted** (`gw.to11.ai` / `api.to11.ai`); URLs are env-configurable | Lightest setup for a public tutorial. (No `localhost` — there's no public "local to11".) |
 | Steps | **5 steps**, one snapshot dir each | Smoothest learning curve; each step adds exactly one layer. |
 | Structure | **Self-contained dirs**, Bun, no workspace; tool code duplicated per step | Each step runs standalone (`cd steps/NN-* && bun install && bun start`); diffs isolate the to11 change. Clarity over DRY. Bun matches the platform (`bun.lock`/Turbo) and runs TypeScript directly. |
 | Delivery | **Scaffold first, then one PR per step** | See Delivery Plan. |
