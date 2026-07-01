@@ -64,6 +64,9 @@ async function main() {
 	const prompt = await upsertPrompt();
 
 	// The template exercises all five block roles + a VIP conditional block.
+	// TO11-2610: tool DEFINITIONS live in `templateJson.tools[]` (below), NOT as
+	// `role:"tool"` blocks — a `role:"tool"` block is now always a tool RESULT
+	// (a `{ toolCallId, content }` turn, used in the worked few-shot).
 	const templateJson = {
 		messages: [
 			{
@@ -88,26 +91,89 @@ async function main() {
 				name: "vip-context",
 				role: "system",
 				// expr is the only shape the renderer evaluates; the editor's group
-				// shape never renders (to11 TO11-2595).
+				// shape never renders (to11 TO11-2595). Conditions read `context`.
 				condition: {
 					kind: "expr",
 					ast: { op: "==", left: { var: "tier" }, right: { literal: "vip" } },
 				},
 				content: "This is a VIP user. Add a one-line packing suggestion.",
 			},
+			// Positive few-shot: a full worked tool-use exchange — geocode the city,
+			// fetch current weather, then answer from the tool results (never from
+			// memory). Exercises the `assistant` tool-call and `tool` RESULT roles.
 			{
-				name: "fewshot-user",
+				name: "fewshot-geo-user",
+				role: "user",
+				content: "I'm in London. What's it like out right now?",
+			},
+			{
+				name: "fewshot-geo-call",
+				role: "assistant",
+				toolCalls: [
+					{
+						id: "call_geo_london",
+						name: "geocode_city",
+						arguments: { name: "London" },
+					},
+				],
+			},
+			{
+				name: "fewshot-geo-result",
+				role: "tool",
+				toolCallId: "call_geo_london",
+				content: '{"latitude":51.5074,"longitude":-0.1278,"name":"London"}',
+			},
+			{
+				name: "fewshot-wx-call",
+				role: "assistant",
+				toolCalls: [
+					{
+						id: "call_wx_london",
+						name: "get_current_weather",
+						arguments: {
+							latitude: 51.5074,
+							longitude: -0.1278,
+							temperature_unit: "fahrenheit",
+						},
+					},
+				],
+			},
+			{
+				name: "fewshot-wx-result",
+				role: "tool",
+				toolCallId: "call_wx_london",
+				content:
+					'{"temperature_2m":59,"wind_speed_10m":8,"relative_humidity_2m":72}',
+			},
+			{
+				name: "fewshot-answer",
+				role: "assistant",
+				content: "It's about 59°F and breezy in London right now.",
+			},
+			// Negative few-shot: the tools only return CURRENT conditions, so the
+			// model declines a forecast and offers what it can actually do.
+			{
+				name: "fewshot-forecast-user",
 				role: "user",
 				content: "I'm in Paris. What's it going to be like this weekend?",
 			},
 			{
-				name: "fewshot-assistant",
+				name: "fewshot-forecast-assistant",
 				role: "assistant",
 				content:
 					"I can only check current conditions, not forecasts — want me to pull Paris's weather right now?",
 			},
 			{
-				role: "tool",
+				name: "user-query",
+				role: "user",
+				content: "I'm in {{ city }}. {{ user_message }}",
+			},
+		],
+		// TO11-2610: tool DEFINITIONS — lifted into the resolved `tools[]` at fetch
+		// time and returned separately from `messages`. Flat `{ name, description,
+		// parameters }`; the SDK's `toOpenAITools` wraps them into OpenAI functions.
+		tools: [
+			{
 				name: "geocode_city",
 				description: "Resolve a city name to latitude/longitude.",
 				parameters: {
@@ -117,7 +183,6 @@ async function main() {
 				},
 			},
 			{
-				role: "tool",
 				name: "get_current_weather",
 				description: "Current weather for a latitude/longitude.",
 				parameters: {
@@ -132,11 +197,6 @@ async function main() {
 						},
 					},
 				},
-			},
-			{
-				name: "user-query",
-				role: "user",
-				content: "I'm in {{ city }}. {{ user_message }}",
 			},
 		],
 	};
@@ -170,7 +230,7 @@ async function main() {
 			templateJson,
 			variablesSchema,
 			modelConfig,
-			changelog: `Weather concierge: five-role template + geocode/forecast tools. (fp:${fp})`,
+			changelog: `Weather concierge: five-role template + worked tool-use few-shot + geocode/forecast tools. (fp:${fp})`,
 		}));
 
 	await client.prompts.moveLabel({

@@ -1,8 +1,9 @@
 # Step 04 — Author the prompt in to11 and fetch it
 
 The prompt leaves the app. You author it **once** in to11 (persona, rules, the VIP
-conditional, a few-shot, and the tool definitions), release it to the `prod` label, and the
-app **fetches** the released version at runtime. `index.ts` now contains zero prompt text.
+conditional, a worked tool-use few-shot, and the tool definitions), release it to the `prod`
+label, and the app **fetches** the released version at runtime. `index.ts` now contains zero
+prompt text.
 
 This is the first step that uses **`@to11ai/sdk`** (for the control-plane prompt API).
 
@@ -36,11 +37,16 @@ exercises all **five to11 block roles** plus a conditional block:
 
 | Role | Block |
 |------|-------|
-| `system` | persona; the VIP block (rendered only when `tier == "vip"`) |
+| `system` | persona; the VIP block (rendered only when `context.tier == "vip"`) |
 | `developer` | the operating rules (outrank the user) |
-| `user` | the few-shot question + the templated user turn |
-| `assistant` | the few-shot reply |
-| `tool` | `geocode_city` and `get_current_weather` **definitions** |
+| `user` | the few-shot questions + the templated user turn |
+| `assistant` | the few-shot replies, including the worked example's tool **calls** |
+| `tool` | the worked few-shot's tool **results** (`{ toolCallId, content }`) |
+
+The two tool **definitions** (`geocode_city`, `get_current_weather`) are **not** message
+blocks — they live in a sibling `templateJson.tools[]` array. As of the TO11-2610 contract,
+a `role: "tool"` block is always a tool *result*; definitions are lifted out of the messages
+and returned to the app as `fetched.tools`.
 
 ## Run
 
@@ -58,15 +64,15 @@ const fetched = await to11.prompts.fetch("weather-concierge", {
   context: { tier: "vip" },                             // conditional-block facts
 });
 const messages = toOpenAIMessages(fetched.messages);    // OpenAI-ready (incl. developer role)
-const tools = toOpenAITools(fetched.tools);             // from the authored tool blocks
+const tools = toOpenAITools(fetched.tools);             // from templateJson.tools[]
 ```
 
 - **`developerRole: "developer"`** keeps the authored `developer` rules as a `developer`
   message instead of folding it to `user`. (Use `"system"` for providers/models that don't
   accept the `developer` role.)
-- **`fetched.tools`** are the authored tool-definition blocks, lifted out for you;
-  `toOpenAITools` turns them into OpenAI function tools. The tools are *used*, not just
-  stored.
+- **`fetched.tools`** are the authored tool definitions (`templateJson.tools[]`), lifted out
+  for you; `toOpenAITools` turns them into OpenAI function tools. The tools are *used*, not
+  just stored.
 - Model params (`model`, `temperature`, `max_tokens`) come from the version's `modelConfig`
   via `getVersion`. The model is prefixed with your provider slug for routing:
   `` `${TO11_PROVIDER}::${cfg.model}` `` (step 03's mechanism).
@@ -86,13 +92,15 @@ const tools = toOpenAITools(fetched.tools);             // from the authored too
 - The hardcoded `messages`/`tools` are gone from `index.ts`; it fetches them.
 - `author.ts` added; `@to11ai/sdk` added as a dependency.
 
-## Note on the worked few-shot
+## The worked few-shot
 
-Step 01's prompt included a *positive* few-shot — a full `assistant → tool_call → tool
-result → answer` exchange. to11's authored-template surface (as of SDK 0.7.0) models tool
-**definitions** but not an authored multi-turn tool-call example, so the version here uses
-the text-only forecast-boundary few-shot. The positive pattern still lives in step 01's
-code; authoring it inside a managed prompt is future platform work.
+The template carries the same *positive* few-shot as step 01 — a full `user → assistant
+tool_call → tool result → assistant tool_call → tool result → answer` exchange — but now
+**authored inside the managed prompt** rather than hardcoded in the app. This is what the
+TO11-2610 contract enables: an `assistant` block can carry structured `toolCalls`, and a
+`role: "tool"` block is a tool *result* (`{ toolCallId, content }`) linked back to a call by
+id. `toOpenAIMessages` converts the whole exchange to OpenAI shape (`tool_calls` +
+`role: "tool"` turns) for you.
 
 ## Next
 
