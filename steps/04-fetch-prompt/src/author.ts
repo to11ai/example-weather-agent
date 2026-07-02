@@ -1,6 +1,4 @@
-// Run once (locally or in CI), not in the request path: this is where the
-// prompt content lives. Idempotent — re-running only creates a new version when
-// the content changes, keyed by a fingerprint stamped into the changelog.
+// Idempotent: re-running only creates a new version when the content changes.
 import { createHash } from "node:crypto";
 import { createClient } from "@to11ai/sdk";
 
