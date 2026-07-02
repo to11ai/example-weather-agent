@@ -41,9 +41,8 @@ async function main() {
 	});
 
 	// developerRole keeps the authored `developer` block as a developer message.
-	// TO11-2642: a single `variables` bag. Rendered keys fill `{{ }}`; gate-only
-	// keys (authored `renderable: false`, e.g. `tier`) are passed here too and
-	// drive block conditions without ever being interpolated.
+	// Everything goes in one `variables` bag: rendered keys fill `{{ }}`, while
+	// gate-only keys (`renderable: false`, e.g. `tier`) only drive conditions.
 	const fetched = await to11.prompts.fetch(SLUG, {
 		developerRole: "developer",
 		variables: {

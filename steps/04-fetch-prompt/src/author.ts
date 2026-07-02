@@ -1,12 +1,6 @@
-// AUTHORING — run once (a prompt engineer or CI), NOT in the request path.
-// This is the only place the prompt content lives. After this runs, the app
-// (index.ts) contains no prompt text — it just fetches the released version.
-//
-// Idempotent: re-running upserts the prompt (by slug) and only creates a new
-// version when the content actually changed (a content fingerprint stamped into
-// the changelog is the idempotency key, since createVersion is append-only).
-//
-//   bun run author
+// Run once (locally or in CI), not in the request path: this is where the
+// prompt content lives. Idempotent — re-running only creates a new version when
+// the content changes, keyed by a fingerprint stamped into the changelog.
 import { createHash } from "node:crypto";
 import { createClient } from "@to11ai/sdk";
 
@@ -28,7 +22,6 @@ const client = createClient({
 
 const SLUG = "weather-concierge";
 
-// Deterministic JSON (sorted keys) → a short content fingerprint.
 function stableStringify(value: unknown): string {
 	if (value === null || typeof value !== "object") return JSON.stringify(value);
 	if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
@@ -63,10 +56,8 @@ async function upsertPrompt() {
 async function main() {
 	const prompt = await upsertPrompt();
 
-	// The template exercises all five block roles + a VIP conditional block.
-	// TO11-2610: tool DEFINITIONS live in `templateJson.tools[]` (below), NOT as
-	// `role:"tool"` blocks — a `role:"tool"` block is now always a tool RESULT
-	// (a `{ toolCallId, content }` turn, used in the worked few-shot).
+	// Tool definitions live in `templateJson.tools[]` (below), not in the
+	// messages; a `role: "tool"` block is a tool result, not a definition.
 	const templateJson = {
 		messages: [
 			{
@@ -90,19 +81,16 @@ async function main() {
 			{
 				name: "vip-tier",
 				role: "system",
-				// expr is the only shape the renderer evaluates; the editor's group
-				// shape never renders (to11 TO11-2595). TO11-2642: conditions read the
-				// single `variables` bag; `tier` is a gate-only variable (declared
-				// `renderable: false` below), so it gates but is never interpolated.
+				// `tier` is a gate-only variable (`renderable: false` below), so this
+				// condition gates the block without ever interpolating its value.
 				condition: {
 					kind: "expr",
 					ast: { op: "==", left: { var: "tier" }, right: { literal: "vip" } },
 				},
 				content: "This is a VIP user. Add a one-line packing suggestion.",
 			},
-			// Positive few-shot: a full worked tool-use exchange — geocode the city,
-			// fetch current weather, then answer from the tool results (never from
-			// memory). Exercises the `assistant` tool-call and `tool` RESULT roles.
+			// Positive few-shot: a worked tool-use exchange — geocode the city, fetch
+			// current weather, then answer from the tool results rather than memory.
 			{
 				name: "fewshot-geo-user",
 				role: "user",
@@ -171,9 +159,8 @@ async function main() {
 				content: "I'm in {{ city }}. {{ user_message }}",
 			},
 		],
-		// TO11-2610: tool DEFINITIONS — lifted into the resolved `tools[]` at fetch
-		// time and returned separately from `messages`. Flat `{ name, description,
-		// parameters }`; the SDK's `toOpenAITools` wraps them into OpenAI functions.
+		// Tool definitions — returned separately from `messages` at fetch time;
+		// `toOpenAITools` wraps them into OpenAI functions.
 		tools: [
 			{
 				name: "geocode_city",
@@ -201,17 +188,13 @@ async function main() {
 				},
 			},
 		],
-		// TO11-2610: the provider-neutral tool-choice directive, authored alongside
-		// the tools. Resolved onto `fetched.toolChoice`; the app maps it to the
-		// OpenAI `tool_choice` field with `toOpenAIToolChoice` (no hardcoding).
-		// "auto" lets the model decide when to call a tool.
+		// Provider-neutral tool-choice directive; the app maps it with
+		// `toOpenAIToolChoice`. "auto" lets the model decide when to call a tool.
 		toolChoice: "auto",
 	};
-	// TO11-2642: one input bag. Rendered variables carry `{{ }}` text; a
-	// `renderable: false` key (here `tier`) is gate-only — usable in block
-	// conditions but never interpolated, and it stays out of `required` because
-	// gate-only keys are optional (a missing gate value simply fails the block's
-	// condition closed).
+	// One input bag. A `renderable: false` key (`tier`) is gate-only: usable in
+	// conditions but never interpolated, and kept out of `required` so a missing
+	// gate value simply fails the block's condition closed.
 	const variablesSchema = {
 		type: "object",
 		required: ["assistant_name", "city", "units", "user_message"],
