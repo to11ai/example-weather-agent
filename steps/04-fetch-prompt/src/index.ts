@@ -1,11 +1,11 @@
-// The app no longer contains any prompt text — it fetches the released version
-// from to11 and runs it. Prompt content lives only in to11 (see author.ts).
+// The app holds no prompt text — it fetches the released version from to11 and
+// runs it. Prompt content lives only in to11 (see author.ts).
 import { createClient } from "@to11ai/sdk";
 import {
 	gatewayAuthHeaders,
 	toOpenAIMessages,
-	toOpenAITools,
 	toOpenAIToolChoice,
+	toOpenAITools,
 } from "@to11ai/sdk/gateway";
 import OpenAI from "openai";
 import type {
@@ -41,6 +41,8 @@ async function main() {
 	});
 
 	// developerRole keeps the authored `developer` block as a developer message.
+	// Everything goes in one `variables` bag: most keys fill `{{ }}`, while a key
+	// authored `renderable: false` (e.g. `tier`) is only used in conditions.
 	const fetched = await to11.prompts.fetch(SLUG, {
 		developerRole: "developer",
 		variables: {
@@ -48,9 +50,8 @@ async function main() {
 			city: "New York",
 			units: "fahrenheit",
 			user_message: "Do I need a jacket?",
+			tier: "vip", // only used in conditions; never rendered into the text
 		},
-		// Conditions evaluate against `context`, not `variables`.
-		context: { tier: "vip" },
 	});
 
 	const version = await to11.prompts.getVersion({

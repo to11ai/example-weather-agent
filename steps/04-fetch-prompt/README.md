@@ -16,7 +16,7 @@ actually reaching the model.
 ## Prerequisites
 
 - Step 03 working (provider connected in to11; `TO11_PROVIDER` set).
-- `@to11ai/sdk` ≥ 0.8.1 (the version with `fetch().tools` + `fetch().toolChoice`,
+- `@to11ai/sdk` ≥ 1.0.0 (`fetch().tools` + `fetch().toolChoice`,
   `toOpenAITools` / `toOpenAIToolChoice`, and `developerRole`).
 
 ## Author the prompt (one time)
@@ -37,16 +37,15 @@ exercises all **five to11 block roles** plus a conditional block:
 
 | Role | Block |
 |------|-------|
-| `system` | persona; the VIP block (rendered only when `context.tier == "vip"`) |
+| `system` | persona; the VIP block (rendered only when the condition `tier == "vip"` holds) |
 | `developer` | the operating rules (outrank the user) |
 | `user` | the few-shot questions + the templated user turn |
 | `assistant` | the few-shot replies, including the worked example's tool **calls** |
 | `tool` | the worked few-shot's tool **results** (`{ toolCallId, content }`) |
 
-The two tool **definitions** (`geocode_city`, `get_current_weather`) are **not** message
-blocks — they live in a sibling `templateJson.tools[]` array. As of the TO11-2610 contract,
-a `role: "tool"` block is always a tool *result*; definitions are lifted out of the messages
-and returned to the app as `fetched.tools`.
+The two tool **definitions** (`geocode_city`, `get_current_weather`) live in
+`templateJson.tools[]` and come back to the app as `fetched.tools`. The `role: "tool"`
+blocks in the few-shot are tool **results**.
 
 ## Run
 
@@ -60,8 +59,8 @@ The app:
 const fetched = await to11.prompts.fetch("weather-concierge", {
   developerRole: "developer",
   variables: { assistant_name: "Nigel", city: "New York", units: "fahrenheit",
-               user_message: "Do I need a jacket?" },   // {{ }} substitution
-  context: { tier: "vip" },                             // conditional-block facts
+               user_message: "Do I need a jacket?",     // {{ }} substitution
+               tier: "vip" },                           // used only in conditions, not rendered
 });
 const messages = toOpenAIMessages(fetched.messages);    // OpenAI-ready (incl. developer role)
 const tools = toOpenAITools(fetched.tools);             // from templateJson.tools[]
@@ -71,9 +70,8 @@ const toolChoice = toOpenAIToolChoice(fetched.toolChoice); // from templateJson.
 - **`developerRole: "developer"`** keeps the authored `developer` rules as a `developer`
   message instead of folding it to `user`. (Use `"system"` for providers/models that don't
   accept the `developer` role.)
-- **`fetched.tools`** are the authored tool definitions (`templateJson.tools[]`), lifted out
-  for you; `toOpenAITools` turns them into OpenAI function tools. The tools are *used*, not
-  just stored.
+- **`fetched.tools`** are the authored tool definitions (`templateJson.tools[]`);
+  `toOpenAITools` turns them into OpenAI function tools.
 - **`fetched.toolChoice`** is the authored, provider-neutral tool-choice directive
   (`templateJson.toolChoice`); `toOpenAIToolChoice` maps it to the OpenAI `tool_choice` field.
   Like everything else on the call, it comes from the prompt — nothing is hardcoded in the
@@ -81,9 +79,10 @@ const toolChoice = toOpenAIToolChoice(fetched.toolChoice); // from templateJson.
 - Model params (`model`, `temperature`, `max_tokens`) come from the version's `modelConfig`
   via `getVersion`. The model is prefixed with your provider slug for routing:
   `` `${TO11_PROVIDER}::${cfg.model}` `` (step 03's mechanism).
-- **`variables` vs `context`:** `variables` fill `{{ }}` placeholders; `context` holds the
-  facts conditional blocks evaluate against (the VIP block gates on `context.tier`). They're
-  separate inputs — a condition can't read a template variable.
+- **One `variables` bag:** every input goes in `variables`. Most keys are rendered — their
+  values fill `{{ }}` placeholders. A key authored `renderable: false` (in the version's
+  `variablesSchema`) is only used in block conditions and never substituted into the text;
+  the VIP block renders when its condition `tier == "vip"` holds.
 
 ## Two URLs
 
@@ -101,8 +100,8 @@ const toolChoice = toOpenAIToolChoice(fetched.toolChoice); // from templateJson.
 
 The template carries the same *positive* few-shot as step 01 — a full `user → assistant
 tool_call → tool result → assistant tool_call → tool result → answer` exchange — but now
-**authored inside the managed prompt** rather than hardcoded in the app. This is what the
-TO11-2610 contract enables: an `assistant` block can carry structured `toolCalls`, and a
+**authored inside the managed prompt** rather than hardcoded in the app: an `assistant`
+block can carry structured `toolCalls`, and a
 `role: "tool"` block is a tool *result* (`{ toolCallId, content }`) linked back to a call by
 id. `toOpenAIMessages` converts the whole exchange to OpenAI shape (`tool_calls` +
 `role: "tool"` turns) for you.
