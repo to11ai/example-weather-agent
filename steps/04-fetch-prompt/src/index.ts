@@ -5,6 +5,7 @@ import {
 	gatewayAuthHeaders,
 	toOpenAIMessages,
 	toOpenAITools,
+	toOpenAIToolChoice,
 } from "@to11ai/sdk/gateway";
 import OpenAI from "openai";
 import type {
@@ -67,6 +68,9 @@ async function main() {
 		fetched.messages,
 	) as unknown as ChatCompletionMessageParam[];
 	const tools = toOpenAITools(fetched.tools) as unknown as ChatCompletionTool[];
+	// tool_choice is prompt-managed too: authored in the template, resolved onto
+	// `fetched.toolChoice`, and mapped to the OpenAI field by the SDK helper.
+	const toolChoice = toOpenAIToolChoice(fetched.toolChoice);
 
 	const openai = new OpenAI({
 		baseURL: TO11_GATEWAY_URL,
@@ -88,7 +92,7 @@ async function main() {
 			model,
 			messages,
 			tools,
-			tool_choice: "auto",
+			tool_choice: toolChoice,
 			temperature: cfg.temperature ?? 0.3,
 			max_tokens: cfg.max_tokens ?? 400,
 		});

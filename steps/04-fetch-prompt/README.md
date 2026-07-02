@@ -16,8 +16,8 @@ actually reaching the model.
 ## Prerequisites
 
 - Step 03 working (provider connected in to11; `TO11_PROVIDER` set).
-- `@to11ai/sdk` ≥ 0.7.0 (the version with `fetch().tools`, `toOpenAITools`, and
-  `developerRole`).
+- `@to11ai/sdk` ≥ 0.8.1 (the version with `fetch().tools` + `fetch().toolChoice`,
+  `toOpenAITools` / `toOpenAIToolChoice`, and `developerRole`).
 
 ## Author the prompt (one time)
 
@@ -65,6 +65,7 @@ const fetched = await to11.prompts.fetch("weather-concierge", {
 });
 const messages = toOpenAIMessages(fetched.messages);    // OpenAI-ready (incl. developer role)
 const tools = toOpenAITools(fetched.tools);             // from templateJson.tools[]
+const toolChoice = toOpenAIToolChoice(fetched.toolChoice); // from templateJson.toolChoice
 ```
 
 - **`developerRole: "developer"`** keeps the authored `developer` rules as a `developer`
@@ -73,6 +74,10 @@ const tools = toOpenAITools(fetched.tools);             // from templateJson.too
 - **`fetched.tools`** are the authored tool definitions (`templateJson.tools[]`), lifted out
   for you; `toOpenAITools` turns them into OpenAI function tools. The tools are *used*, not
   just stored.
+- **`fetched.toolChoice`** is the authored, provider-neutral tool-choice directive
+  (`templateJson.toolChoice`); `toOpenAIToolChoice` maps it to the OpenAI `tool_choice` field.
+  Like everything else on the call, it comes from the prompt — nothing is hardcoded in the
+  request. (Returns `undefined` when unset, which lets OpenAI apply its own default.)
 - Model params (`model`, `temperature`, `max_tokens`) come from the version's `modelConfig`
   via `getVersion`. The model is prefixed with your provider slug for routing:
   `` `${TO11_PROVIDER}::${cfg.model}` `` (step 03's mechanism).

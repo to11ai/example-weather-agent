@@ -199,6 +199,11 @@ async function main() {
 				},
 			},
 		],
+		// TO11-2610: the provider-neutral tool-choice directive, authored alongside
+		// the tools. Resolved onto `fetched.toolChoice`; the app maps it to the
+		// OpenAI `tool_choice` field with `toOpenAIToolChoice` (no hardcoding).
+		// "auto" lets the model decide when to call a tool.
+		toolChoice: "auto",
 	};
 	const variablesSchema = {
 		type: "object",
