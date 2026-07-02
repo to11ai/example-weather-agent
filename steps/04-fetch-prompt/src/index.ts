@@ -1,5 +1,5 @@
-// The app no longer contains any prompt text — it fetches the released version
-// from to11 and runs it. Prompt content lives only in to11 (see author.ts).
+// The app holds no prompt text — it fetches the released version from to11 and
+// runs it. Prompt content lives only in to11 (see author.ts).
 import { createClient } from "@to11ai/sdk";
 import {
 	gatewayAuthHeaders,

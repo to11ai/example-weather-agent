@@ -16,8 +16,7 @@ actually reaching the model.
 ## Prerequisites
 
 - Step 03 working (provider connected in to11; `TO11_PROVIDER` set).
-- `@to11ai/sdk` ≥ 1.0.0 (the version that collapsed `context` into a single
-  `variables` bag; also has `fetch().tools` + `fetch().toolChoice`,
+- `@to11ai/sdk` ≥ 1.0.0 (`fetch().tools` + `fetch().toolChoice`,
   `toOpenAITools` / `toOpenAIToolChoice`, and `developerRole`).
 
 ## Author the prompt (one time)
@@ -85,9 +84,7 @@ const toolChoice = toOpenAIToolChoice(fetched.toolChoice); // from templateJson.
 - **One `variables` bag:** every input goes in `variables`. Most keys are rendered — their
   values fill `{{ }}` placeholders. A key authored `renderable: false` (in the version's
   `variablesSchema`) is only used in block conditions and never substituted into the text;
-  the VIP block renders when its condition `tier == "vip"` holds. (Earlier SDKs took a
-  second `context` bag for this; 1.0.0 removed it — move those keys into `variables` with
-  `renderable: false`.)
+  the VIP block renders when its condition `tier == "vip"` holds.
 
 ## Two URLs
 
