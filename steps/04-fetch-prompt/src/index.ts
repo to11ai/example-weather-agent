@@ -41,8 +41,8 @@ async function main() {
 	});
 
 	// developerRole keeps the authored `developer` block as a developer message.
-	// Everything goes in one `variables` bag: most keys fill `{{ }}`, while a key
-	// authored `renderable: false` (e.g. `tier`) is only used in conditions.
+	// Most variables fill `{{ }}` placeholders; one authored `renderable: false`
+	// (`tier`) is only used in conditions, not substituted into the text.
 	const fetched = await to11.prompts.fetch(SLUG, {
 		developerRole: "developer",
 		variables: {
