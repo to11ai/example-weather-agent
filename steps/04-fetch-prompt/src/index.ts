@@ -4,8 +4,8 @@ import { createClient } from "@to11ai/sdk";
 import {
 	gatewayAuthHeaders,
 	toOpenAIMessages,
-	toOpenAITools,
 	toOpenAIToolChoice,
+	toOpenAITools,
 } from "@to11ai/sdk/gateway";
 import OpenAI from "openai";
 import type {
@@ -41,6 +41,9 @@ async function main() {
 	});
 
 	// developerRole keeps the authored `developer` block as a developer message.
+	// TO11-2642: a single `variables` bag. Rendered keys fill `{{ }}`; gate-only
+	// keys (authored `renderable: false`, e.g. `tier`) are passed here too and
+	// drive block conditions without ever being interpolated.
 	const fetched = await to11.prompts.fetch(SLUG, {
 		developerRole: "developer",
 		variables: {
@@ -48,9 +51,8 @@ async function main() {
 			city: "New York",
 			units: "fahrenheit",
 			user_message: "Do I need a jacket?",
+			tier: "vip", // gate-only: renders the VIP block, never interpolated
 		},
-		// Conditions evaluate against `context`, not `variables`.
-		context: { tier: "vip" },
 	});
 
 	const version = await to11.prompts.getVersion({

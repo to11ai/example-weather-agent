@@ -16,7 +16,8 @@ actually reaching the model.
 ## Prerequisites
 
 - Step 03 working (provider connected in to11; `TO11_PROVIDER` set).
-- `@to11ai/sdk` ≥ 0.8.1 (the version with `fetch().tools` + `fetch().toolChoice`,
+- `@to11ai/sdk` ≥ 1.0.0 (the version that collapsed `context` into a single
+  `variables` bag; also has `fetch().tools` + `fetch().toolChoice`,
   `toOpenAITools` / `toOpenAIToolChoice`, and `developerRole`).
 
 ## Author the prompt (one time)
@@ -37,7 +38,7 @@ exercises all **five to11 block roles** plus a conditional block:
 
 | Role | Block |
 |------|-------|
-| `system` | persona; the VIP block (rendered only when `context.tier == "vip"`) |
+| `system` | persona; the VIP block (rendered only when the gate-only variable `tier == "vip"`) |
 | `developer` | the operating rules (outrank the user) |
 | `user` | the few-shot questions + the templated user turn |
 | `assistant` | the few-shot replies, including the worked example's tool **calls** |
@@ -60,8 +61,8 @@ The app:
 const fetched = await to11.prompts.fetch("weather-concierge", {
   developerRole: "developer",
   variables: { assistant_name: "Nigel", city: "New York", units: "fahrenheit",
-               user_message: "Do I need a jacket?" },   // {{ }} substitution
-  context: { tier: "vip" },                             // conditional-block facts
+               user_message: "Do I need a jacket?",     // {{ }} substitution
+               tier: "vip" },                           // gate-only; drives the VIP block
 });
 const messages = toOpenAIMessages(fetched.messages);    // OpenAI-ready (incl. developer role)
 const tools = toOpenAITools(fetched.tools);             // from templateJson.tools[]
@@ -81,9 +82,12 @@ const toolChoice = toOpenAIToolChoice(fetched.toolChoice); // from templateJson.
 - Model params (`model`, `temperature`, `max_tokens`) come from the version's `modelConfig`
   via `getVersion`. The model is prefixed with your provider slug for routing:
   `` `${TO11_PROVIDER}::${cfg.model}` `` (step 03's mechanism).
-- **`variables` vs `context`:** `variables` fill `{{ }}` placeholders; `context` holds the
-  facts conditional blocks evaluate against (the VIP block gates on `context.tier`). They're
-  separate inputs — a condition can't read a template variable.
+- **One `variables` bag (TO11-2642):** every input goes in `variables`. Most keys are
+  rendered — their values fill `{{ }}` placeholders. A key authored `renderable: false` (in
+  the version's `variablesSchema`) is **gate-only**: block conditions can read it but it's
+  never interpolated. The VIP block gates on the gate-only `tier`. (Earlier SDKs took a
+  second `context` bag for this; 1.0.0 removed it — fold those keys into `variables` with
+  `renderable: false`.)
 
 ## Two URLs
 
