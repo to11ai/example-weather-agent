@@ -54,8 +54,6 @@ async function upsertPrompt() {
 async function main() {
 	const prompt = await upsertPrompt();
 
-	// Tool definitions live in `templateJson.tools[]` (below), not in the
-	// messages; a `role: "tool"` block is a tool result, not a definition.
 	const templateJson = {
 		messages: [
 			{

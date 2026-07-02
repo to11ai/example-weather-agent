@@ -43,10 +43,9 @@ exercises all **five to11 block roles** plus a conditional block:
 | `assistant` | the few-shot replies, including the worked example's tool **calls** |
 | `tool` | the worked few-shot's tool **results** (`{ toolCallId, content }`) |
 
-The two tool **definitions** (`geocode_city`, `get_current_weather`) are **not** message
-blocks — they live in a sibling `templateJson.tools[]` array. A `role: "tool"` block is
-always a tool *result*; definitions are lifted out of the messages
-and returned to the app as `fetched.tools`.
+The two tool **definitions** (`geocode_city`, `get_current_weather`) live in
+`templateJson.tools[]` and come back to the app as `fetched.tools`. The `role: "tool"`
+blocks in the few-shot are tool **results**.
 
 ## Run
 
@@ -71,9 +70,8 @@ const toolChoice = toOpenAIToolChoice(fetched.toolChoice); // from templateJson.
 - **`developerRole: "developer"`** keeps the authored `developer` rules as a `developer`
   message instead of folding it to `user`. (Use `"system"` for providers/models that don't
   accept the `developer` role.)
-- **`fetched.tools`** are the authored tool definitions (`templateJson.tools[]`), lifted out
-  for you; `toOpenAITools` turns them into OpenAI function tools. The tools are *used*, not
-  just stored.
+- **`fetched.tools`** are the authored tool definitions (`templateJson.tools[]`);
+  `toOpenAITools` turns them into OpenAI function tools.
 - **`fetched.toolChoice`** is the authored, provider-neutral tool-choice directive
   (`templateJson.toolChoice`); `toOpenAIToolChoice` maps it to the OpenAI `tool_choice` field.
   Like everything else on the call, it comes from the prompt — nothing is hardcoded in the
