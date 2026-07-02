@@ -9,7 +9,7 @@ const { OPENAI_API_KEY } = process.env;
 if (!OPENAI_API_KEY) throw new Error("set OPENAI_API_KEY");
 
 // Without prompt management, the prompt lives in application code.
-const assistantName = "Nigel";
+const assistantName = "Roker";
 const city = "New York";
 const units = "fahrenheit";
 const tier = "vip";

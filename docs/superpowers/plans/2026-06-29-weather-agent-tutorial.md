@@ -275,7 +275,7 @@ const { OPENAI_API_KEY } = process.env;
 if (!OPENAI_API_KEY) throw new Error("set OPENAI_API_KEY");
 
 // Without prompt management, the prompt lives in application code.
-const assistantName = "Nigel";
+const assistantName = "Roker";
 const city = "New York";
 const units = "fahrenheit";
 const tier = "vip";
@@ -838,7 +838,7 @@ async function main() {
   // 1. Fetch the released prompt -> rendered messages (no prompt text in this file).
   const fetched = await to11.prompts.fetch(SLUG, {
     variables: {
-      assistant_name: "Nigel",
+      assistant_name: "Roker",
       city: "New York",
       units: "fahrenheit",
       tier: "vip",
