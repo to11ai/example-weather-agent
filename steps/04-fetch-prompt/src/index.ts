@@ -41,8 +41,8 @@ async function main() {
 	});
 
 	// developerRole keeps the authored `developer` block as a developer message.
-	// Everything goes in one `variables` bag: rendered keys fill `{{ }}`, while
-	// gate-only keys (`renderable: false`, e.g. `tier`) only drive conditions.
+	// Everything goes in one `variables` bag: most keys fill `{{ }}`, while a key
+	// authored `renderable: false` (e.g. `tier`) is only used in conditions.
 	const fetched = await to11.prompts.fetch(SLUG, {
 		developerRole: "developer",
 		variables: {
@@ -50,7 +50,7 @@ async function main() {
 			city: "New York",
 			units: "fahrenheit",
 			user_message: "Do I need a jacket?",
-			tier: "vip", // gate-only: renders the VIP block, never interpolated
+			tier: "vip", // only used in conditions; never rendered into the text
 		},
 	});
 

@@ -79,8 +79,8 @@ async function main() {
 			{
 				name: "vip-tier",
 				role: "system",
-				// `tier` is a gate-only variable (`renderable: false` below), so this
-				// condition gates the block without ever interpolating its value.
+				// `tier` is marked `renderable: false` below, so it's only used in
+				// conditions like this one — never substituted into the prompt text.
 				condition: {
 					kind: "expr",
 					ast: { op: "==", left: { var: "tier" }, right: { literal: "vip" } },
@@ -190,9 +190,9 @@ async function main() {
 		// `toOpenAIToolChoice`. "auto" lets the model decide when to call a tool.
 		toolChoice: "auto",
 	};
-	// One input bag. A `renderable: false` key (`tier`) is gate-only: usable in
-	// conditions but never interpolated, and kept out of `required` so a missing
-	// gate value simply fails the block's condition closed.
+	// One input bag. A `renderable: false` key (`tier`) is only used in
+	// conditions, never substituted into the prompt text; it's kept out of
+	// `required` so a missing value just leaves its conditions unsatisfied.
 	const variablesSchema = {
 		type: "object",
 		required: ["assistant_name", "city", "units", "user_message"],
