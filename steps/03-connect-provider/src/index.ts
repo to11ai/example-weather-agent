@@ -23,7 +23,7 @@ const TO11_ENV = process.env.TO11_ENV ?? "prod";
 const MODEL = `${TO11_PROVIDER}::gpt-4o`;
 
 // Without prompt management, the prompt lives in application code.
-const assistantName = "Nigel";
+const assistantName = "Roker";
 const city = "New York";
 const units = "fahrenheit";
 const tier = "vip";

@@ -46,7 +46,7 @@ async function main() {
 	const fetched = await to11.prompts.fetch(SLUG, {
 		developerRole: "developer",
 		variables: {
-			assistant_name: "Nigel",
+			assistant_name: "Roker",
 			city: "New York",
 			units: "fahrenheit",
 			user_message: "Do I need a jacket?",
