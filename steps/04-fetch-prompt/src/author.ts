@@ -155,8 +155,6 @@ async function main() {
 				content: "I'm in {{ city }}. {{ user_message }}",
 			},
 		],
-		// Tool definitions — returned separately from `messages` at fetch time;
-		// `toOpenAITools` wraps them into OpenAI functions.
 		tools: [
 			{
 				name: "geocode_city",
@@ -184,13 +182,9 @@ async function main() {
 				},
 			},
 		],
-		// Provider-neutral tool-choice directive; the app maps it with
-		// `toOpenAIToolChoice`. "auto" lets the model decide when to call a tool.
+		// "auto" lets the model decide when to call a tool.
 		toolChoice: "auto",
 	};
-	// One input bag. A `renderable: false` key (`tier`) is only used in
-	// conditions, never substituted into the prompt text; it's kept out of
-	// `required` so a missing value just leaves its conditions unsatisfied.
 	const variablesSchema = {
 		type: "object",
 		required: ["assistant_name", "city", "units", "user_message"],

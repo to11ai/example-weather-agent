@@ -79,10 +79,9 @@ const toolChoice = toOpenAIToolChoice(fetched.toolChoice); // from templateJson.
 - Model params (`model`, `temperature`, `max_tokens`) come from the version's `modelConfig`
   via `getVersion`. The model is prefixed with your provider slug for routing:
   `` `${TO11_PROVIDER}::${cfg.model}` `` (step 03's mechanism).
-- **One `variables` bag:** every input goes in `variables`. Most keys are rendered — their
-  values fill `{{ }}` placeholders. A key authored `renderable: false` (in the version's
-  `variablesSchema`) is only used in block conditions and never substituted into the text;
-  the VIP block renders when its condition `tier == "vip"` holds.
+- **`variables`:** most fill `{{ }}` placeholders. A variable authored `renderable: false`
+  (in the version's `variablesSchema`) is only used in block conditions and never
+  substituted into the text; the VIP block renders when its condition `tier == "vip"` holds.
 
 ## Two URLs
 
