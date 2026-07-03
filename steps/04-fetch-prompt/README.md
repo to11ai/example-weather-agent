@@ -113,9 +113,6 @@ const openai = new OpenAI({
 });
 ```
 
-> A real labeled *agent-turn* root span wrapping the model calls (rather than the flat grouping
-> here) needs app-side OpenTelemetry exporting to the to11 Collector — beyond this tutorial.
-
 ## What changed
 
 - The hardcoded `messages`/`tools` are gone from `index.ts`; it fetches them.
