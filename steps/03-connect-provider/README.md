@@ -71,7 +71,9 @@ bun start
 ## Expected output
 
 Same answer as steps 01–02 — but notice there is **no `OPENAI_API_KEY` anywhere in this
-project**. The gateway supplied the upstream credential from the connected provider.
+project**. The gateway supplied the upstream credential from the connected provider. The run is
+grouped into a single trace via the same `traceparent` + `x-to11-session-id` as
+[step 02](../02-gateway#one-trace-per-run).
 
 ## What this step teaches
 

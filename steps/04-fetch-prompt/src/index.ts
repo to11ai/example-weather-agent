@@ -3,6 +3,7 @@
 import { createClient } from "@to11ai/sdk";
 import {
 	gatewayAuthHeaders,
+	gatewayPromptHeaders,
 	toOpenAIMessages,
 	toOpenAIToolChoice,
 	toOpenAITools,
@@ -31,6 +32,20 @@ const TO11_API_URL = process.env.TO11_API_URL ?? "https://api.to11.ai"; // contr
 const TO11_ENV = process.env.TO11_ENV ?? "prod";
 
 const SLUG = "weather-concierge";
+
+// A single W3C `traceparent` (one trace-id for the whole run) on every gateway
+// call groups the tool-use loop's turns into ONE trace instead of one per call;
+// the per-run `x-to11-session-id` groups this run in the trace list. Ids are hex
+// from Bun's Web Crypto global — no import, no dependency.
+const hex = (bytes: number) =>
+	[...crypto.getRandomValues(new Uint8Array(bytes))]
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("");
+
+const traceId = hex(16); // 32 hex — the shared grouping key
+const spanId = hex(8); // 16 hex — the parent the gateway's spans nest under
+const sessionId = crypto.randomUUID(); // one per run
+const traceparent = `00-${traceId}-${spanId}-01`; // 01 = sampled
 
 async function main() {
 	const to11 = createClient({
@@ -76,11 +91,18 @@ async function main() {
 	const openai = new OpenAI({
 		baseURL: TO11_GATEWAY_URL,
 		apiKey: TO11_API_KEY,
-		defaultHeaders: gatewayAuthHeaders({
-			apiKey: TO11_API_KEY,
-			projectId: TO11_PROJECT_ID,
-			env: TO11_ENV,
-		}),
+		defaultHeaders: {
+			...gatewayAuthHeaders({
+				apiKey: TO11_API_KEY,
+				projectId: TO11_PROJECT_ID,
+				env: TO11_ENV,
+			}),
+			// Attach prompt provenance so every gen_ai span in the trace records
+			// which prompt version produced it (x-to11-prompt-id / -version / …).
+			...gatewayPromptHeaders(fetched),
+			"x-to11-session-id": sessionId,
+			traceparent,
+		},
 	});
 	const model = `${TO11_PROVIDER}::${cfg.model ?? "gpt-4o"}`;
 

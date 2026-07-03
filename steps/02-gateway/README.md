@@ -21,6 +21,13 @@ The gateway is **OpenAI-compatible**, so you keep using the OpenAI SDK — you j
 `baseURL` at the gateway and attach to11 auth headers. No to11 SDK is needed to route a call:
 
 ```ts
+// One trace + session id per run (Bun Web Crypto — no import, no dependency).
+const hex = (n: number) =>
+  [...crypto.getRandomValues(new Uint8Array(n))]
+    .map((b) => b.toString(16).padStart(2, "0")).join("");
+const traceparent = `00-${hex(16)}-${hex(8)}-01`; // one trace-id, shared by every call
+const sessionId = crypto.randomUUID();
+
 const openai = new OpenAI({
   baseURL: TO11_GATEWAY_URL,            // e.g. https://gw.to11.ai/v1
   apiKey: OPENAI_API_KEY,               // still sent; the gateway forwards it upstream
@@ -28,11 +35,14 @@ const openai = new OpenAI({
     "x-to11-authorization": `Bearer ${TO11_API_KEY}`,
     "x-to11-project-id": TO11_PROJECT_ID,
     "x-to11-env": TO11_ENV,             // serving environment label, e.g. "prod"
+    "x-to11-session-id": sessionId,     // groups this run in the trace list
+    traceparent,                        // rolls the loop's calls into ONE trace
   },
 });
 ```
 
-That's the whole diff. The prompt, tools, and tool-use loop are untouched.
+Point `baseURL` at the gateway, attach the auth headers, and send one shared `traceparent` on
+every call — the prompt, tools, and tool-use loop are otherwise untouched.
 
 ## Steps
 
@@ -44,9 +54,19 @@ bun start
 
 ## Expected output
 
-Same answer as step 01 (two chained tool calls, then the jacket recommendation) — but now
-the call shows up as a **trace in the to11 dashboard**, and the HTTP response carries an
-`x-to11-request-id` header you can correlate with that trace.
+Same answer as step 01 (two chained tool calls, then the jacket recommendation), and the whole
+run shows up as **one trace in the to11 dashboard**: the loop's three model calls share a trace
+id, so they group under a single trace (the `SESSION` column shows this run's id). The HTTP
+response also carries an `x-to11-request-id` header you can correlate with that trace.
+
+## One trace per run
+
+A trace in to11 is every span that shares a `trace_id`. With no `traceparent`, the gateway mints
+a fresh trace id per request, so the loop's three calls become three traces. Sending a single
+W3C `traceparent` — `00-<trace_id>-<span_id>-01`, with the **same** `trace_id` on every call —
+makes the gateway record all three model calls under one trace. `<span_id>` is the parent the
+gateway's spans hang under; `01` marks the trace sampled. (A labeled "agent turn" parent span
+_above_ the model calls needs app-side OpenTelemetry — out of scope here.)
 
 ## Two URLs, don't mix them
 

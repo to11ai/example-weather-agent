@@ -109,9 +109,9 @@ The tool-use loop is otherwise unchanged.
 
 ### Step 04
 
-Same two additions, plus prompt provenance. Fold the hand-written auth headers into the
-`gatewayAuthHeaders` helper (already imported from `@to11ai/sdk/gateway` alongside the other
-gateway helpers) for consistency with `gatewayPromptHeaders`:
+Same two additions, plus prompt provenance. Step 04 already sets `defaultHeaders` to
+`gatewayAuthHeaders({ … })` (imported from `@to11ai/sdk/gateway`); spread it into an object
+literal so the provenance, session, and traceparent headers sit beside it:
 
 ```ts
 import {

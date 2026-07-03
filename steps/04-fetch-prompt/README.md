@@ -90,10 +90,38 @@ const toolChoice = toOpenAIToolChoice(fetched.toolChoice); // from templateJson.
 - `TO11_GATEWAY_URL` — **data plane** (gateway); the OpenAI client `baseURL`, used for the
   model call. Default `https://gw.to11.ai/v1`. Different services — don't mix them.
 
+## Prompt provenance on the trace
+
+The app fetches a *managed* prompt, so it can tell the gateway which prompt produced each call.
+`gatewayPromptHeaders(fetched)` emits `x-to11-prompt-id` / `x-to11-prompt-version` (plus
+release / variant / labels when present); spread onto the OpenAI client's `defaultHeaders`, they
+tag every gen_ai span with the prompt version, so each `chat` span in the trace shows the exact
+prompt version behind it. The trace-grouping headers from
+[step 02](../02-gateway#one-trace-per-run) (`traceparent`, `x-to11-session-id`) ride along on the
+same client:
+
+```ts
+const openai = new OpenAI({
+  baseURL: TO11_GATEWAY_URL,
+  apiKey: TO11_API_KEY,
+  defaultHeaders: {
+    ...gatewayAuthHeaders({ apiKey: TO11_API_KEY, projectId: TO11_PROJECT_ID, env: TO11_ENV }),
+    ...gatewayPromptHeaders(fetched),   // x-to11-prompt-id / -version / …
+    "x-to11-session-id": sessionId,
+    traceparent,
+  },
+});
+```
+
+> A real labeled *agent-turn* root span wrapping the model calls (rather than the flat grouping
+> here) needs app-side OpenTelemetry exporting to the to11 Collector — beyond this tutorial.
+
 ## What changed
 
 - The hardcoded `messages`/`tools` are gone from `index.ts`; it fetches them.
 - `author.ts` added; `@to11ai/sdk` added as a dependency.
+- The gateway call carries **prompt provenance** (`gatewayPromptHeaders(fetched)`) plus the
+  step-02 trace-grouping headers, so each trace records the prompt version behind it.
 
 ## The worked few-shot
 

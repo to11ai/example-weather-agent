@@ -141,6 +141,20 @@ const tools: ChatCompletionTool[] = [
 	},
 ];
 
+// A single W3C `traceparent` (one trace-id for the whole run) on every gateway
+// call groups the tool-use loop's turns into ONE trace instead of one per call;
+// the per-run `x-to11-session-id` groups this run in the trace list. Ids are hex
+// from Bun's Web Crypto global — no import, no dependency.
+const hex = (bytes: number) =>
+	[...crypto.getRandomValues(new Uint8Array(bytes))]
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("");
+
+const traceId = hex(16); // 32 hex — the shared grouping key
+const spanId = hex(8); // 16 hex — the parent the gateway's spans nest under
+const sessionId = crypto.randomUUID(); // one per run
+const traceparent = `00-${traceId}-${spanId}-01`; // 01 = sampled
+
 async function main() {
 	// Pointed at the to11 gateway (OpenAI-compatible). The OpenAI SDK requires a
 	// non-empty apiKey string, so we pass the to11 key; real auth is the
@@ -153,6 +167,8 @@ async function main() {
 			"x-to11-authorization": `Bearer ${TO11_API_KEY}`,
 			"x-to11-project-id": TO11_PROJECT_ID,
 			"x-to11-env": TO11_ENV,
+			"x-to11-session-id": sessionId,
+			traceparent,
 		},
 	});
 
