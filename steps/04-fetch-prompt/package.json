@@ -9,7 +9,7 @@
 	},
 	"dependencies": {
 		"openai": "^4",
-		"@to11ai/sdk": "^1.0.0"
+		"@to11ai/sdk": "^2.0.0-rc.1"
 	},
 	"devDependencies": {
 		"@types/bun": "latest",

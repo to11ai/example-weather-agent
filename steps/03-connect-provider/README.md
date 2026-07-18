@@ -23,22 +23,13 @@ lives only in to11.
 
 ## What changed in code
 
-`OPENAI_API_KEY` is gone — from the app and from `.env`. The OpenAI SDK still needs a
-non-empty `apiKey` string, so we pass the to11 key (the real auth is the
-`x-to11-authorization` header):
+`OPENAI_API_KEY` is gone — from the app and from `.env`. With no `providerApiKey`,
+`openaiOptions()` carries the to11 key as a placeholder and the gateway runs the call on the
+**connected provider's** stored credential:
 
 ```ts
-const { TO11_API_KEY, TO11_PROJECT_ID, TO11_PROVIDER } = process.env;
-// ...
-const openai = new OpenAI({
-  baseURL: TO11_GATEWAY_URL,
-  apiKey: TO11_API_KEY,                 // SDK needs a string; real auth is the header
-  defaultHeaders: {
-    "x-to11-authorization": `Bearer ${TO11_API_KEY}`,
-    "x-to11-project-id": TO11_PROJECT_ID,
-    "x-to11-env": TO11_ENV,
-  },
-});
+const to11 = createClient({ env: TO11_ENV });
+const openai = new OpenAI(to11.openaiOptions()); // managed: gateway supplies the provider key
 ```
 
 ## Route to your connected provider (required)
@@ -50,10 +41,12 @@ connected provider's stored credential to use. You do that with the connection's
 The slug comes from a **required** env var:
 
 ```ts
-const { TO11_API_KEY, TO11_PROJECT_ID, TO11_PROVIDER } = process.env;
-// ...
+const { TO11_PROVIDER } = process.env;
 const MODEL = `${TO11_PROVIDER}::gpt-4o`;
-await openai.chat.completions.create({ model: MODEL, /* ... */ });
+await openai.chat.completions.create(
+  { model: MODEL, /* ... */ },
+  { headers: to11.turn().headers() },
+);
 ```
 
 Set `TO11_PROVIDER` in `.env` to your connection's slug. (The gateway also accepts a
@@ -71,9 +64,9 @@ bun start
 ## Expected output
 
 Same answer as steps 01–02 — but notice there is **no `OPENAI_API_KEY` anywhere in this
-project**. The gateway supplied the upstream credential from the connected provider. The run is
-grouped into a single trace via the same `traceparent` + `x-to11-session-id` as
-[step 02](../02-gateway#one-trace-per-run).
+project**. The gateway supplied the upstream credential from the connected provider. The call
+is traced and grouped by `turn().headers()` exactly as in
+[step 02](../02-gateway#how-the-trace-is-grouped).
 
 ## What this step teaches
 
@@ -83,5 +76,4 @@ grouped into a single trace via the same `traceparent` + `x-to11-session-id` as
 ## Next
 
 [Step 04](../04-fetch-prompt) moves the **prompt itself** into to11 — the app stops
-hardcoding prompt text and fetches the released version at runtime. (This is where the
-`@to11ai/sdk` is introduced.)
+hardcoding prompt text and renders the released version at runtime.
