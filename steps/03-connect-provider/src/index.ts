@@ -6,19 +6,8 @@
 import { createClient } from "@to11ai/sdk";
 import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
+import { requireEnv } from "./env";
 import { TOOL_IMPLS, TOOLS } from "./tools";
-
-function requireEnv(name: string): string {
-	const value = process.env[name];
-	if (!value) {
-		console.error(
-			`Missing required environment variable: ${name}\n` +
-				"Copy .env.example to .env and fill it in, then re-run.",
-		);
-		process.exit(1);
-	}
-	return value;
-}
 
 // The SDK reads TO11_API_KEY / TO11_PROJECT_ID from the environment and errors
 // clearly if either is missing. TO11_PROVIDER is app-specific (the model-prefix

@@ -1,18 +1,7 @@
 import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
+import { requireEnv } from "./env";
 import { TOOL_IMPLS, TOOLS } from "./tools";
-
-function requireEnv(name: string): string {
-	const value = process.env[name];
-	if (!value) {
-		console.error(
-			`Missing required environment variable: ${name}\n` +
-				"Copy .env.example to .env and fill it in, then re-run.",
-		);
-		process.exit(1);
-	}
-	return value;
-}
 
 const OPENAI_API_KEY = requireEnv("OPENAI_API_KEY");
 

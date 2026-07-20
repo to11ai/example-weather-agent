@@ -1,18 +1,7 @@
 // Idempotent: re-running only creates a new version when the content changes.
 import { createHash } from "node:crypto";
 import { createClient } from "@to11ai/sdk";
-
-function requireEnv(name: string): string {
-	const value = process.env[name];
-	if (!value) {
-		console.error(
-			`Missing required environment variable: ${name}\n` +
-				"Copy .env.example to .env and fill it in, then re-run.",
-		);
-		process.exit(1);
-	}
-	return value;
-}
+import { requireEnv } from "./env";
 
 const TO11_API_KEY = requireEnv("TO11_API_KEY");
 const TO11_PROJECT_ID = requireEnv("TO11_PROJECT_ID");
