@@ -8,9 +8,11 @@ import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { TOOL_IMPLS, TOOLS } from "./tools";
 
-const { TO11_API_KEY, TO11_PROJECT_ID, TO11_PROVIDER } = process.env;
-if (!TO11_API_KEY || !TO11_PROJECT_ID || !TO11_PROVIDER)
-	throw new Error("set TO11_API_KEY, TO11_PROJECT_ID, and TO11_PROVIDER");
+// The SDK reads TO11_API_KEY / TO11_PROJECT_ID from the environment and throws a
+// clear error if either is missing. TO11_PROVIDER is app-specific (the model-prefix
+// slug), so it's the one we check here.
+const { TO11_PROVIDER } = process.env;
+if (!TO11_PROVIDER) throw new Error("set TO11_PROVIDER");
 
 // Route to that connected provider via the gateway's "<provider>::<model>"
 // convention — e.g. TO11_PROVIDER=openai-01sj -> model "openai-01sj::gpt-4o".

@@ -7,10 +7,11 @@ import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { TOOL_IMPLS, TOOLS } from "./tools";
 
-const { OPENAI_API_KEY, TO11_API_KEY, TO11_PROJECT_ID } = process.env;
+// The SDK reads TO11_API_KEY / TO11_PROJECT_ID from the environment and throws a
+// clear error if either is missing, so we don't re-check them here. OPENAI_API_KEY
+// is ours (forwarded upstream in step 02) — the SDK can't check that one.
+const { OPENAI_API_KEY } = process.env;
 if (!OPENAI_API_KEY) throw new Error("set OPENAI_API_KEY");
-if (!TO11_API_KEY || !TO11_PROJECT_ID)
-	throw new Error("set TO11_API_KEY and TO11_PROJECT_ID");
 
 // Without prompt management, the prompt lives in application code.
 const assistantName = "Roker";
