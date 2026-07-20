@@ -63,10 +63,20 @@ bun start
 
 ## Expected output
 
-Same answer as steps 01–02 (two chained tool calls, then the answer) — but notice there is
-**no `OPENAI_API_KEY` anywhere in this project**. The gateway supplied the upstream credential
-from the connected provider. The run is grouped into a single trace via the same hoisted turn
-(`traceparent` + `x-to11-session-id`) as [step 02](../02-gateway#one-trace-per-run).
+Two chained tool calls, then the answer:
+
+```
+  [tool] geocode_city({"name":"New York"}) -> { latitude: 40.71, longitude: -74.01, name: "New York, ..." }
+  [tool] get_current_weather({"latitude":40.71,"longitude":-74.01,"temperature_unit":"fahrenheit"}) -> { temperature_2m: 54, ... }
+ASSISTANT: It's about 54°F in New York — a light jacket is plenty. Pack a compact umbrella just in case.
+```
+
+(Exact numbers vary with live weather. The VIP tier adds the packing suggestion.)
+
+What's different here: there is **no `OPENAI_API_KEY` anywhere in this project** — the gateway
+supplied the upstream credential from the connected provider. The run is still grouped into a
+single trace via the hoisted turn (`traceparent` + `x-to11-session-id`), just like the previous
+step ([how trace grouping works](../02-gateway#one-trace-per-run)).
 
 ## What this step teaches
 

@@ -53,9 +53,19 @@ bun start
 
 ## Expected output
 
-Same answer as step 01 (two chained tool calls, then the jacket recommendation), and the whole
-run shows up as **one trace in the to11 dashboard**: the loop's model calls share a trace id,
-so they group under a single trace (the `SESSION` column shows this run's id). The HTTP response
+The model drives two chained tool calls, then answers:
+
+```
+  [tool] geocode_city({"name":"New York"}) -> { latitude: 40.71, longitude: -74.01, name: "New York, ..." }
+  [tool] get_current_weather({"latitude":40.71,"longitude":-74.01,"temperature_unit":"fahrenheit"}) -> { temperature_2m: 54, ... }
+ASSISTANT: It's about 54°F in New York — a light jacket is plenty. Pack a compact umbrella just in case.
+```
+
+(Exact numbers vary with live weather. The VIP tier adds the packing suggestion.)
+
+The agent behaves exactly as it did before the gateway — what's new is that the whole run now
+shows up as **one trace in the to11 dashboard**: the loop's model calls share a trace id, so
+they group under a single trace (the `SESSION` column shows this run's id). The HTTP response
 also carries an `x-to11-request-id` header you can correlate with that trace.
 
 ## One trace per run

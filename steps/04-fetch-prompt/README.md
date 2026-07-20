@@ -94,6 +94,25 @@ while (true) {
   (in the version's `variablesSchema`) is only used in conditions and never substituted into
   the text; the VIP line renders when `{% if tier == "vip" %}` holds.
 
+## Expected output
+
+The app logs which prompt version it rendered, then runs the same tool-use loop:
+
+```
+Rendered prompt_abc123 v3 -> 2 messages; 2 tools from code
+
+  [tool] geocode_city({"name":"New York"}) -> { latitude: 40.71, longitude: -74.01, name: "New York, ..." }
+  [tool] get_current_weather({"latitude":40.71,"longitude":-74.01,"temperature_unit":"fahrenheit"}) -> { temperature_2m: 54, ... }
+ASSISTANT: It's about 54°F in New York — a light jacket is plenty. Pack a compact umbrella just in case.
+```
+
+(Exact numbers vary with live weather; the prompt id and version reflect what `author`
+released. The VIP tier adds the packing suggestion.)
+
+The answer is the same weather recommendation as the earlier steps. What's different: the two
+initial messages (`system` + `user`) came from the **rendered** prompt rather than code, and
+each `chat` span in the trace is now stamped with the prompt id and version.
+
 ## Prompt provenance on the trace
 
 The app renders a *managed* prompt, so `turn().headers(prompt)` stamps the request with prompt
