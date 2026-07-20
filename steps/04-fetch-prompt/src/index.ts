@@ -1,12 +1,15 @@
 // The app holds no prompt text — it renders the released version from to11 and
-// runs it. Prompt content lives only in to11 (see author.ts).
+// runs it. Prompt content lives only in to11 (see author.ts). The tool
+// DEFINITIONS, though, stay in application code (tools.ts): the loaded prompt
+// carries no tools, and the app offers them on the call and runs them when the
+// model asks.
 //
 // `format: "openai"` shapes the rendered prompt for the OpenAI client, so
-// `prompt.messages` and `prompt.config` spread straight into the request — no
-// converters, no manual header assembly.
+// `prompt.messages` and `prompt.config` spread straight into the request.
 import { createClient } from "@to11ai/sdk";
 import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
+import { TOOL_IMPLS, TOOLS } from "./tools";
 
 function required(name: string): string {
 	const value = process.env[name];
@@ -39,31 +42,59 @@ async function main() {
 		},
 	});
 
-	// turn().headers(prompt) returns the full bag: to11 auth, a traceparent + session
-	// id, and the prompt's provenance (x-to11-prompt-id / -version / …) so the span
-	// records which prompt version produced it.
+	// One turn for the whole run. headers(prompt) returns the full bag: to11 auth, a
+	// single traceparent + session id (so the tool loop is ONE trace), and the
+	// prompt's provenance (x-to11-prompt-id / -version / …). Hoist it so every call
+	// reuses the same ids.
 	const headers = to11.turn().headers(prompt);
 
 	// prompt.config carries the authored model + params. Prefix the model with the
 	// connected provider's slug for gateway routing (step 03's mechanism).
 	const model = `${TO11_PROVIDER}::${prompt.config.model ?? "gpt-4o"}`;
 
+	// `prompt.messages` is OpenAI-shaped; the SDK types its content as optional, so
+	// cast to the client's param type for the mutable loop accumulator.
+	const messages = [...prompt.messages] as ChatCompletionMessageParam[];
+
 	console.log(
-		`Rendered ${prompt.metadata.promptId} v${prompt.metadata.version} -> ${prompt.messages.length} messages\n`,
+		`Rendered ${prompt.metadata.promptId} v${prompt.metadata.version} -> ${messages.length} messages; ${TOOLS.length} tools from code\n`,
 	);
 
-	// `prompt.messages` is OpenAI-shaped; the SDK types its content as optional,
-	// so cast to the client's param type to spread it in.
-	const response = await openai.chat.completions.create(
-		{
-			...prompt.config,
-			model,
-			messages: prompt.messages as ChatCompletionMessageParam[],
-		},
-		{ headers },
-	);
+	while (true) {
+		// tools + tool_choice come from application code, not the prompt.
+		const response = await openai.chat.completions.create(
+			{
+				...prompt.config,
+				model,
+				messages,
+				tools: TOOLS,
+				tool_choice: "auto",
+			},
+			{ headers },
+		);
 
-	console.log("ASSISTANT:", response.choices[0].message.content);
+		const msg = response.choices[0].message;
+		messages.push(msg); // replay the assistant turn (carries any tool_calls)
+
+		if (!msg.tool_calls?.length) {
+			console.log("ASSISTANT:", msg.content);
+			return;
+		}
+
+		for (const call of msg.tool_calls) {
+			const args = JSON.parse(call.function.arguments);
+			const result = await TOOL_IMPLS[call.function.name](args);
+			console.log(
+				`  [tool] ${call.function.name}(${JSON.stringify(args)}) ->`,
+				result,
+			);
+			messages.push({
+				role: "tool",
+				tool_call_id: call.id,
+				content: JSON.stringify(result),
+			});
+		}
+	}
 }
 
 main().catch((err) => {

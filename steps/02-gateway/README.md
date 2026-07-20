@@ -1,13 +1,13 @@
 # Step 02 — Route through the to11 gateway
 
-Take the exact agent from [step 01](../01-vanilla) and send its OpenAI call **through
+Take the exact agent from [step 01](../01-vanilla) and send its OpenAI calls **through
 the to11 gateway** instead of straight to OpenAI. You add the `@to11ai/sdk`, point the
 OpenAI client at the gateway with one call, and get full request/response observability —
-with **no change to the prompt**.
+with **no change to the prompt or the tools**.
 
 ## Goal
 
-Get the model call traced in to11 (cost, latency, payloads) while the app behaves
+Get every model call traced in to11 (cost, latency, payloads) while the app behaves
 identically to step 01.
 
 ## Prerequisites
@@ -30,14 +30,18 @@ const to11 = createClient({ env: TO11_ENV }); // reads TO11_API_KEY / TO11_PROJE
 // so we pass it — the gateway forwards it upstream.
 const openai = new OpenAI(to11.openaiOptions({ apiKey: OPENAI_API_KEY }));
 
+// One turn for the whole run: a single traceparent + session id, hoisted so every
+// call in the tool loop groups into ONE trace.
+const headers = to11.turn().headers();
+
 await openai.chat.completions.create(
-  { model: "gpt-4o", messages, temperature: 0.3, max_tokens: 400 },
-  { headers: to11.turn().headers() }, // auth + session + trace headers
+  { model: "gpt-4o", messages, tools, tool_choice: "auto" /* … */ },
+  { headers },
 );
 ```
 
 No manual `x-to11-*` header map and no hand-rolled `traceparent` — the SDK mints and carries
-them. The prompt is otherwise untouched.
+them. The prompt, tools, and tool-use loop are otherwise untouched.
 
 ## Steps
 
@@ -49,18 +53,20 @@ bun start
 
 ## Expected output
 
-Same answer as step 01, but the call now shows up as a **trace in the to11 dashboard** — model,
-tokens, and latency, with the run grouped under this turn's `x-to11-session-id`. The HTTP
-response also carries an `x-to11-request-id` header you can correlate with that trace.
+Same answer as step 01 (two chained tool calls, then the jacket recommendation), and the whole
+run shows up as **one trace in the to11 dashboard**: the loop's model calls share a trace id,
+so they group under a single trace (the `SESSION` column shows this run's id). The HTTP response
+also carries an `x-to11-request-id` header you can correlate with that trace.
 
-## How the trace is grouped
+## One trace per run
 
-`turn().headers()` stamps the request with a W3C `traceparent` and an `x-to11-session-id`, so
-the gateway records the call as one trace grouped under this run's session. A `turn` is the unit
-that groups a run's calls: this step makes a single call, but hoisting one turn and reusing its
-headers is how a multi-call agent keeps every call under one `traceparent` (you'll see that in
-later steps). (A labeled "agent turn" parent span _above_ the model call needs app-side
-OpenTelemetry — out of scope here.)
+A trace in to11 is every span that shares a `trace_id`. The turn's `headers()` carries a single
+W3C `traceparent` — `00-<trace_id>-<span_id>-01`, with the **same** `trace_id` on every call —
+so the gateway records all the loop's model calls under one trace. Because the turn is created
+once and its headers reused, every call in the loop lines up as one trace; create a turn
+*inside* the loop instead and each call would get its own. The `x-to11-session-id` (also from
+the turn) groups this run in the trace list. (A labeled "agent turn" parent span _above_ the
+model calls needs app-side OpenTelemetry — out of scope here.)
 
 ## Two URLs, don't mix them
 
@@ -74,7 +80,8 @@ OpenTelemetry — out of scope here.)
 
 - The gateway is a drop-in: OpenAI-compatible ingress means your existing SDK code works
   unchanged behind a different base URL — one that `openaiOptions()` hands you.
-- Observability is free — you didn't touch the prompt, yet the call is now captured.
+- Observability is free — you didn't touch the prompt or the tools, yet every call is now
+  captured.
 
 ## Next
 
