@@ -64,6 +64,10 @@ async function main() {
 		// tools + tool_choice come from application code, not the prompt.
 		const response = await openai.chat.completions.create(
 			{
+				// App-side fallbacks first; anything the version authored in
+				// prompt.config overrides them, and the routed model wins last.
+				temperature: 0.3,
+				max_tokens: 400,
 				...prompt.config,
 				model,
 				messages,

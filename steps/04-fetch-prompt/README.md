@@ -87,7 +87,9 @@ while (true) {
   `render()` returns no tools because none are authored.
 - **`prompt.config`** carries the model params from the version's Config pane (`model`,
   `temperature`, `max_tokens`). Spread it in; the model is prefixed with your provider slug
-  for routing — `` `${TO11_PROVIDER}::${prompt.config.model}` `` (step 03's mechanism).
+  for routing — `` `${TO11_PROVIDER}::${prompt.config.model}` `` (step 03's mechanism). App-side
+  defaults (`temperature`/`max_tokens`) are set **before** the spread, so an authored value
+  wins but a version that omits one still falls back instead of relying on the provider's default.
 - **`variables`:** most fill `{{ }}` placeholders. A variable authored `renderable: false`
   (in the version's `variablesSchema`) is only used in conditions and never substituted into
   the text; the VIP line renders when `{% if tier == "vip" %}` holds.
