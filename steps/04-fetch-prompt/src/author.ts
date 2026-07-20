@@ -6,8 +6,9 @@ import { requireEnv } from "./env";
 const TO11_API_KEY = requireEnv("TO11_API_KEY");
 const TO11_PROJECT_ID = requireEnv("TO11_PROJECT_ID");
 
-// baseUrl (the control-plane API) is read from TO11_API_URL and defaulted by the
-// SDK, so we don't pass it here.
+// projectId is bound to the client here, so the prompts.* calls below don't repeat
+// it. baseUrl (the control-plane API) is read from TO11_API_URL and defaulted by
+// the SDK, so we don't pass it.
 const client = createClient({
 	apiKey: TO11_API_KEY,
 	projectId: TO11_PROJECT_ID,
@@ -34,11 +35,10 @@ function fingerprint(value: unknown): string {
 }
 
 async function upsertPrompt() {
-	const existing = await client.prompts.list({ projectId: TO11_PROJECT_ID });
+	const existing = await client.prompts.list();
 	const found = existing.items.find((p) => p.slug === SLUG);
 	if (found) return found;
 	return client.prompts.create({
-		projectId: TO11_PROJECT_ID,
 		name: "Weather Concierge",
 		slug: SLUG,
 		description: "Weather assistant.",
@@ -99,7 +99,6 @@ async function main() {
 	// Reuse a version already carrying this content (fingerprint in the changelog).
 	const fp = fingerprint({ templateJson, variablesSchema, modelConfig });
 	const versions = await client.prompts.listVersions({
-		projectId: TO11_PROJECT_ID,
 		promptId: prompt.id,
 	});
 	const existing = versions.find((v) =>
@@ -108,7 +107,6 @@ async function main() {
 	const version =
 		existing ??
 		(await client.prompts.createVersion({
-			projectId: TO11_PROJECT_ID,
 			promptId: prompt.id,
 			format: "chat",
 			templateJson,
@@ -118,7 +116,6 @@ async function main() {
 		}));
 
 	await client.prompts.moveLabel({
-		projectId: TO11_PROJECT_ID,
 		promptId: prompt.id,
 		label: "prod",
 		versionId: version.id,
