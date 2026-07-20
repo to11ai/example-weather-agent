@@ -56,17 +56,28 @@ export async function getCurrentWeather(args: {
 }
 
 // Tool definitions — the schemas offered to the model on every call. These live in
-// application code, not in the managed prompt.
+// application code, not in the managed prompt. The descriptions tell the model how
+// to use and CHAIN the tools (geocode first, then feed the coordinates to the
+// weather lookup) — the model has only these strings to reason from.
 export const TOOLS: ChatCompletionTool[] = [
 	{
 		type: "function",
 		function: {
 			name: "geocode_city",
-			description: "Resolve a city name to latitude/longitude.",
+			description:
+				"Resolve a city or place name to geographic coordinates. Call this FIRST " +
+				"whenever the user names a location, then pass the returned latitude and " +
+				"longitude to get_current_weather. Returns { latitude, longitude, name }.",
 			parameters: {
 				type: "object",
 				required: ["name"],
-				properties: { name: { type: "string" } },
+				properties: {
+					name: {
+						type: "string",
+						description:
+							"City or place name, e.g. 'New York' or 'Paris, France'.",
+					},
+				},
 			},
 		},
 	},
@@ -74,14 +85,29 @@ export const TOOLS: ChatCompletionTool[] = [
 		type: "function",
 		function: {
 			name: "get_current_weather",
-			description: "Current weather for a latitude/longitude.",
+			description:
+				"Get the CURRENT weather (temperature, wind speed, humidity) for a " +
+				"latitude/longitude — normally the coordinates returned by geocode_city, " +
+				"so call that first if you only have a place name. Reports current " +
+				"conditions only, not a forecast.",
 			parameters: {
 				type: "object",
 				required: ["latitude", "longitude"],
 				properties: {
-					latitude: { type: "number" },
-					longitude: { type: "number" },
-					temperature_unit: { type: "string", enum: ["fahrenheit", "celsius"] },
+					latitude: {
+						type: "number",
+						description: "Latitude, e.g. from geocode_city's result.",
+					},
+					longitude: {
+						type: "number",
+						description: "Longitude, e.g. from geocode_city's result.",
+					},
+					temperature_unit: {
+						type: "string",
+						enum: ["fahrenheit", "celsius"],
+						description:
+							"Unit for the temperature reading; match the units the user asked for.",
+					},
 				},
 			},
 		},
