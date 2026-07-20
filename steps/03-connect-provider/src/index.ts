@@ -12,10 +12,6 @@ const { TO11_API_KEY, TO11_PROJECT_ID, TO11_PROVIDER } = process.env;
 if (!TO11_API_KEY || !TO11_PROJECT_ID || !TO11_PROVIDER)
 	throw new Error("set TO11_API_KEY, TO11_PROJECT_ID, and TO11_PROVIDER");
 
-// Serving environment label. Gateway/API URLs come from the SDK defaults (or
-// TO11_GATEWAY_URL / TO11_API_URL when self-hosting).
-const TO11_ENV = process.env.TO11_ENV ?? "prod";
-
 // Route to that connected provider via the gateway's "<provider>::<model>"
 // convention — e.g. TO11_PROVIDER=openai-01sj -> model "openai-01sj::gpt-4o".
 const MODEL = `${TO11_PROVIDER}::gpt-4o`;
@@ -50,7 +46,8 @@ const messages: ChatCompletionMessageParam[] = [
 ];
 
 async function main() {
-	const to11 = createClient({ env: TO11_ENV });
+	// createClient reads TO11_API_KEY / TO11_PROJECT_ID / TO11_ENV from the environment.
+	const to11 = createClient();
 
 	// No providerApiKey — openaiOptions() carries the to11 key as a placeholder and
 	// the gateway runs the call on the project's connected provider credential. No

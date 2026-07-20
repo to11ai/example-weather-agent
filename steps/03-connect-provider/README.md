@@ -28,7 +28,7 @@ lives only in to11.
 **connected provider's** stored credential:
 
 ```ts
-const to11 = createClient({ env: TO11_ENV });
+const to11 = createClient(); // reads TO11_API_KEY / TO11_PROJECT_ID / TO11_ENV from env
 const openai = new OpenAI(to11.openaiOptions()); // managed: gateway supplies the provider key
 ```
 

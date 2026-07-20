@@ -18,14 +18,13 @@ function required(name: string): string {
 }
 
 const TO11_PROVIDER = required("TO11_PROVIDER"); // connected provider slug, e.g. openai-01sj
-const TO11_ENV = process.env.TO11_ENV ?? "prod";
 
 const SLUG = "weather-concierge";
 
 async function main() {
-	// createClient reads TO11_API_KEY / TO11_PROJECT_ID (and TO11_GATEWAY_URL /
-	// TO11_API_URL when self-hosting) from the environment.
-	const to11 = createClient({ env: TO11_ENV, format: "openai" });
+	// createClient reads TO11_API_KEY / TO11_PROJECT_ID / TO11_ENV (and the
+	// TO11_GATEWAY_URL / TO11_API_URL overrides when self-hosting) from the environment.
+	const to11 = createClient({ format: "openai" });
 	const openai = new OpenAI(to11.openaiOptions());
 
 	// Render the released prompt: the merged system message and the user turn come

@@ -12,11 +12,6 @@ if (!OPENAI_API_KEY) throw new Error("set OPENAI_API_KEY");
 if (!TO11_API_KEY || !TO11_PROJECT_ID)
 	throw new Error("set TO11_API_KEY and TO11_PROJECT_ID");
 
-// Serving environment label. The gateway/API URLs come from the SDK defaults
-// (or TO11_GATEWAY_URL / TO11_API_URL when self-hosting) — createClient reads
-// them from the environment.
-const TO11_ENV = process.env.TO11_ENV ?? "prod";
-
 // Without prompt management, the prompt lives in application code.
 const assistantName = "Roker";
 const city = "New York";
@@ -47,9 +42,9 @@ const messages: ChatCompletionMessageParam[] = [
 ];
 
 async function main() {
-	// createClient reads TO11_API_KEY / TO11_PROJECT_ID from the environment; `env`
-	// is the serving label. No `format` here — this step doesn't render prompts.
-	const to11 = createClient({ env: TO11_ENV });
+	// createClient reads TO11_API_KEY / TO11_PROJECT_ID / TO11_ENV from the
+	// environment. No `format` here — this step doesn't render prompts.
+	const to11 = createClient();
 
 	// openaiOptions() returns a plain { baseURL, apiKey, defaultHeaders } that points
 	// the OpenAI client at the gateway and carries the to11 tenant-auth headers —

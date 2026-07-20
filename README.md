@@ -73,7 +73,7 @@ each step's `.env.example` lists the vars it needs:
 |----------|---------|---------|
 | `TO11_GATEWAY_URL` | Data plane — the gateway **host** (the SDK adds the `/v1` path) | `https://gw.to11.ai` |
 | `TO11_API_URL` | Control plane — prompt/config API host (steps 04+) | `https://api.to11.ai` |
-| `TO11_ENV` | Serving environment label | `prod` |
+| `TO11_ENV` | Serving environment label (read by the SDK) | `prod` (from `.env.example`; no SDK default) |
 
 > `TO11_GATEWAY_URL` (data plane) and `TO11_API_URL` (control plane) are **different
 > services** — don't point one at the other. Both are **host only** (no `/v1`); the SDK

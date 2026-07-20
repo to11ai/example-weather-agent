@@ -14,7 +14,7 @@ identically to step 01.
 
 - Step 01 working.
 - A to11 account: an **API key** and a **project id**.
-- `@to11ai/sdk` ≥ 2.0.0-rc.1.
+- `@to11ai/sdk` ≥ 2.0.0-rc.2.
 
 ## What changed from step 01
 
@@ -24,7 +24,7 @@ supplies the base URL and headers that point it there. `openaiOptions()` returns
 `turn().headers()` supplies the per-call auth and trace headers:
 
 ```ts
-const to11 = createClient({ env: TO11_ENV }); // reads TO11_API_KEY / TO11_PROJECT_ID from env
+const to11 = createClient(); // reads TO11_API_KEY / TO11_PROJECT_ID / TO11_ENV from env
 
 // Point the OpenAI client at the gateway. The provider key is still ours in step 02,
 // so we pass it — the gateway forwards it upstream.

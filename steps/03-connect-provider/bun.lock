@@ -5,7 +5,7 @@
     "": {
       "name": "weather-agent-01-vanilla",
       "dependencies": {
-        "@to11ai/sdk": "^2.0.0-rc.1",
+        "@to11ai/sdk": "^2.0.0-rc.2",
         "openai": "^4",
       },
       "devDependencies": {
@@ -15,7 +15,7 @@
     },
   },
   "packages": {
-    "@to11ai/sdk": ["@to11ai/sdk@2.0.0-rc.1", "", { "dependencies": { "zod": "4.4.3" } }, "sha512-OEQc0bbtKxr6xfVGB7eN3PMkCZr+vYI/sqaGV9jiD0KfXNzP/T14rm2pF8v1o+lZ8AXcR00a2x4Bo+IWP8UFAg=="],
+    "@to11ai/sdk": ["@to11ai/sdk@2.0.0-rc.2", "", { "dependencies": { "zod": "4.4.3" } }, "sha512-c7wKS8tPTbPCco4nrBpvFHlih7kI26uXj/yrPMoA9f1Cz8kPtpDq31UBY+aFZ1e0pyrd3mazx2k1LSJe7U4gtA=="],
 
     "@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
 

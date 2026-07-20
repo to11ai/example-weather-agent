@@ -17,7 +17,7 @@ model and no conversion or header plumbing in the app.
 ## Prerequisites
 
 - Step 03 working (provider connected in to11; `TO11_PROVIDER` set).
-- `@to11ai/sdk` ≥ 2.0.0-rc.1.
+- `@to11ai/sdk` ≥ 2.0.0-rc.2.
 
 ## Author the prompt (one time)
 
@@ -59,7 +59,7 @@ converters**:
 ```ts
 import { TOOL_IMPLS, TOOLS } from "./tools"; // definitions + implementations, in code
 
-const to11 = createClient({ env: TO11_ENV, format: "openai" });
+const to11 = createClient({ format: "openai" }); // env/keys read from TO11_* env vars
 const openai = new OpenAI(to11.openaiOptions());
 
 const prompt = await to11.prompts.render("weather-concierge", {
