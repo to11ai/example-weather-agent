@@ -2,14 +2,20 @@
 import { createHash } from "node:crypto";
 import { createClient } from "@to11ai/sdk";
 
-function required(name: string): string {
+function requireEnv(name: string): string {
 	const value = process.env[name];
-	if (!value) throw new Error(`set ${name}`);
+	if (!value) {
+		console.error(
+			`Missing required environment variable: ${name}\n` +
+				"Copy .env.example to .env and fill it in, then re-run.",
+		);
+		process.exit(1);
+	}
 	return value;
 }
 
-const TO11_API_KEY = required("TO11_API_KEY");
-const TO11_PROJECT_ID = required("TO11_PROJECT_ID");
+const TO11_API_KEY = requireEnv("TO11_API_KEY");
+const TO11_PROJECT_ID = requireEnv("TO11_PROJECT_ID");
 const TO11_API_URL = process.env.TO11_API_URL ?? "https://api.to11.ai";
 
 const client = createClient({
@@ -138,6 +144,6 @@ async function main() {
 }
 
 main().catch((err) => {
-	console.error(err);
+	console.error(err instanceof Error ? err.message : err);
 	process.exit(1);
 });

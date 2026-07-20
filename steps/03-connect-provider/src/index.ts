@@ -8,11 +8,22 @@ import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { TOOL_IMPLS, TOOLS } from "./tools";
 
-// The SDK reads TO11_API_KEY / TO11_PROJECT_ID from the environment and throws a
-// clear error if either is missing. TO11_PROVIDER is app-specific (the model-prefix
+function requireEnv(name: string): string {
+	const value = process.env[name];
+	if (!value) {
+		console.error(
+			`Missing required environment variable: ${name}\n` +
+				"Copy .env.example to .env and fill it in, then re-run.",
+		);
+		process.exit(1);
+	}
+	return value;
+}
+
+// The SDK reads TO11_API_KEY / TO11_PROJECT_ID from the environment and errors
+// clearly if either is missing. TO11_PROVIDER is app-specific (the model-prefix
 // slug), so it's the one we check here.
-const { TO11_PROVIDER } = process.env;
-if (!TO11_PROVIDER) throw new Error("set TO11_PROVIDER");
+const TO11_PROVIDER = requireEnv("TO11_PROVIDER");
 
 // Route to that connected provider via the gateway's "<provider>::<model>"
 // convention — e.g. TO11_PROVIDER=openai-01sj -> model "openai-01sj::gpt-4o".
@@ -98,6 +109,6 @@ async function main() {
 }
 
 main().catch((err) => {
-	console.error(err);
+	console.error(err instanceof Error ? err.message : err);
 	process.exit(1);
 });

@@ -11,13 +11,19 @@ import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { TOOL_IMPLS, TOOLS } from "./tools";
 
-function required(name: string): string {
+function requireEnv(name: string): string {
 	const value = process.env[name];
-	if (!value) throw new Error(`set ${name}`);
+	if (!value) {
+		console.error(
+			`Missing required environment variable: ${name}\n` +
+				"Copy .env.example to .env and fill it in, then re-run.",
+		);
+		process.exit(1);
+	}
 	return value;
 }
 
-const TO11_PROVIDER = required("TO11_PROVIDER"); // connected provider slug, e.g. openai-01sj
+const TO11_PROVIDER = requireEnv("TO11_PROVIDER"); // connected provider slug, e.g. openai-01sj
 
 const SLUG = "weather-concierge";
 
@@ -101,6 +107,6 @@ async function main() {
 }
 
 main().catch((err) => {
-	console.error(err);
+	console.error(err instanceof Error ? err.message : err);
 	process.exit(1);
 });

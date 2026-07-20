@@ -2,8 +2,19 @@ import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { TOOL_IMPLS, TOOLS } from "./tools";
 
-const { OPENAI_API_KEY } = process.env;
-if (!OPENAI_API_KEY) throw new Error("set OPENAI_API_KEY");
+function requireEnv(name: string): string {
+	const value = process.env[name];
+	if (!value) {
+		console.error(
+			`Missing required environment variable: ${name}\n` +
+				"Copy .env.example to .env and fill it in, then re-run.",
+		);
+		process.exit(1);
+	}
+	return value;
+}
+
+const OPENAI_API_KEY = requireEnv("OPENAI_API_KEY");
 
 // Without prompt management, the prompt lives in application code.
 const assistantName = "Roker";
@@ -72,6 +83,6 @@ async function main() {
 }
 
 main().catch((err) => {
-	console.error(err);
+	console.error(err instanceof Error ? err.message : err);
 	process.exit(1);
 });
