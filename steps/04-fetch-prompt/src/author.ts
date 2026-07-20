@@ -5,10 +5,10 @@ import { requireEnv } from "./env";
 
 const TO11_API_KEY = requireEnv("TO11_API_KEY");
 const TO11_PROJECT_ID = requireEnv("TO11_PROJECT_ID");
-const TO11_API_URL = process.env.TO11_API_URL ?? "https://api.to11.ai";
 
+// baseUrl (the control-plane API) is read from TO11_API_URL and defaulted by the
+// SDK, so we don't pass it here.
 const client = createClient({
-	baseUrl: TO11_API_URL,
 	apiKey: TO11_API_KEY,
 	projectId: TO11_PROJECT_ID,
 });
