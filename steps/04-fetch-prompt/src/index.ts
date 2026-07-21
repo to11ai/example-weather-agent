@@ -97,5 +97,8 @@ async function main() {
 
 main().catch((err) => {
 	console.error(err instanceof Error ? err.message : err);
+	// to11 API errors carry the specifics (e.g. which validation failed) on `details`.
+	const details = (err as { details?: unknown }).details;
+	if (details) console.error(details);
 	process.exit(1);
 });
