@@ -43,8 +43,8 @@ blocks**:
 No tools and no few-shot tool-call blocks are authored — the operating rules reference the
 tools by name (`geocode_city`, `get_current_weather`), but the **definitions live in code**
 (`tools.ts`). The VIP instruction used to be a separate conditional block; here it's a Liquid
-`{% if %}` inside the system message. `tier` is authored `renderable: false`, so it only drives
-that condition and never appears in the rendered text.
+`{% if %}` inside the system message. `tier` is a plain variable that only drives that
+condition — since the template never writes `{{ tier }}`, it isn't rendered into the text.
 
 ## Run
 
@@ -90,9 +90,9 @@ while (true) {
   for routing — `` `${TO11_PROVIDER}::${prompt.config.model}` `` (step 03's mechanism). App-side
   defaults (`temperature`/`max_tokens`) are set **before** the spread, so an authored value
   wins but a version that omits one still falls back instead of relying on the provider's default.
-- **`variables`:** most fill `{{ }}` placeholders. A variable authored `renderable: false`
-  (in the version's `variablesSchema`) is only used in conditions and never substituted into
-  the text; the VIP line renders when `{% if tier == "vip" %}` holds.
+- **`variables`:** most fill `{{ }}` placeholders. `tier` is only referenced in the Liquid
+  `{% if tier == "vip" %}` condition (never as `{{ tier }}`), so it drives the VIP line without
+  appearing in the text.
 
 ## Expected output
 
