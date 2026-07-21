@@ -27,10 +27,9 @@ cp .env.example .env        # TO11_API_KEY, TO11_PROJECT_ID, TO11_PROVIDER
 bun run author              # creates the prompt + version, releases it to `prod`
 ```
 
-`author` is **idempotent**: it upserts the prompt by slug and only creates a new version
-when the content actually changed (it stamps a content fingerprint into the changelog and
-reuses a matching version). Re-running with unchanged content is a no-op that just keeps
-`prod` pointed at the right version.
+`author` upserts the prompt by slug (creating it the first time), then **publishes a new
+version and points the `prod` label at it** on every run. So each run is a fresh release you
+can see in the dashboard's version history.
 
 `author.ts` is the **only** place prompt text lives. It stores a chat template of **two
 blocks**:
