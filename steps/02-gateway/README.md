@@ -14,7 +14,7 @@ identically to step 01.
 
 - Step 01 working.
 - A to11 account: an **API key** and a **project id**.
-- `@to11ai/sdk` ≥ 2.0.0-rc.2.
+- `@to11ai/sdk` ≥ 2.0.0-rc.3.
 
 ## What changed from step 01
 
