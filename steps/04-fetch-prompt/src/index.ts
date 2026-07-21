@@ -46,9 +46,9 @@ async function main() {
 	// connected provider's slug for gateway routing (step 03's mechanism).
 	const model = `${TO11_PROVIDER}::${prompt.config.model ?? "gpt-4o"}`;
 
-	// `prompt.messages` is OpenAI-shaped; the SDK types its content as optional, so
-	// cast to the client's param type for the mutable loop accumulator.
-	const messages = [...prompt.messages] as ChatCompletionMessageParam[];
+	// `prompt.messages` is already OpenAI-shaped — copy it into a mutable accumulator
+	// the tool loop pushes onto (assistant replies + tool results).
+	const messages: ChatCompletionMessageParam[] = [...prompt.messages];
 
 	console.log(
 		`Rendered ${prompt.metadata.promptId} v${prompt.metadata.version} -> ${messages.length} messages; ${TOOLS.length} tools from code\n`,
