@@ -3,8 +3,10 @@
 Build a tool-using weather agent, then adopt the [to11](https://github.com/to11ai/platform)
 platform one layer at a time. The agent takes a city and a question ("I'm in New York.
 Do I need a jacket?"), geocodes the city, looks up the current weather, and answers through
-an OpenAI `gpt-4o` tool-use loop. Each step lives in its own directory and is a complete,
-runnable snapshot — so a `diff` between two steps shows you exactly what that step adds.
+an OpenAI `gpt-4o` tool-use loop. The tool definitions live in application code; from step 04
+the prompt is managed in to11 (but still carries no tools). Each step lives in its own
+directory and is a complete, runnable snapshot — so a `diff` between two steps shows you
+exactly what that step adds.
 
 ## How it works
 
@@ -25,7 +27,7 @@ sequenceDiagram
     participant OM as Open-Meteo
 
     User->>App: "I'm in New York. Do I need a jacket?"
-    Note over App: fetch released prompt from to11 (steps 04+)
+    Note over App: render released prompt from to11 (steps 04+); tools from code
     App->>GW: chat.completions (messages + tools)
     GW->>LLM: forward (provider key injected)
     LLM-->>App: tool_call geocode_city("New York")
@@ -51,7 +53,7 @@ Five steps, each adding exactly one layer:
 | 1 | [steps/01-vanilla](steps/01-vanilla) | The agent with no to11 — prompt + tools in code |
 | 2 | [steps/02-gateway](steps/02-gateway) | Route through the to11 gateway for observability |
 | 3 | [steps/03-connect-provider](steps/03-connect-provider) | Connect OpenAI in to11; drop the provider key |
-| 4 | [steps/04-fetch-prompt](steps/04-fetch-prompt) | Author the prompt in to11; the app fetches it |
+| 4 | [steps/04-fetch-prompt](steps/04-fetch-prompt) | Author the prompt in to11; the app renders it |
 | 5 | [steps/05-label-deploy](steps/05-label-deploy) | Versions, staging/prod labels, provenance, rollback |
 
 ## Prerequisites
@@ -63,17 +65,19 @@ Five steps, each adding exactly one layer:
 
 ### to11 endpoints
 
-Steps 02+ use **hosted to11**. Two env vars point at it (defaults shown; each step's
-`.env.example` lists the ones it needs):
+Steps 02+ use **hosted to11** through the `@to11ai/sdk` (`createClient`), which reads these
+from the environment. The URLs default to hosted to11, so you only set them to self-host;
+each step's `.env.example` lists the vars it needs:
 
 | Variable | Purpose | Default |
 |----------|---------|---------|
-| `TO11_GATEWAY_URL` | Data plane — the OpenAI client `baseURL` | `https://gw.to11.ai/v1` |
-| `TO11_API_URL` | Control plane — `createClient` `baseUrl` (steps 04+) | `https://api.to11.ai` |
-| `TO11_ENV` | Serving environment label | `prod` |
+| `TO11_GATEWAY_URL` | Data plane — the gateway **host** (the SDK adds the `/v1` path) | `https://gw.to11.ai` |
+| `TO11_API_URL` | Control plane — prompt/config API host (steps 04+) | `https://api.to11.ai` |
+| `TO11_ENV` | Serving environment label (read by the SDK) | `prod` (from `.env.example`; no SDK default) |
 
 > `TO11_GATEWAY_URL` (data plane) and `TO11_API_URL` (control plane) are **different
-> services** — don't point one at the other.
+> services** — don't point one at the other. Both are **host only** (no `/v1`); the SDK
+> adds the path each client expects.
 
 ## Run any step
 

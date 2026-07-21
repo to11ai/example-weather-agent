@@ -1,29 +1,29 @@
-# Step 04 — Author the prompt in to11 and fetch it
+# Step 04 — Author the prompt in to11 and render it
 
-The prompt leaves the app. You author it **once** in to11 (persona, rules, the VIP
-conditional, a worked tool-use few-shot, and the tool definitions), release it to the `prod`
-label, and the app **fetches** the released version at runtime. `index.ts` now contains zero
-prompt text.
+The prompt leaves the app. You author it **once** in to11 (a merged `system` message with the
+persona, the operating rules, and a VIP conditional, plus the templated `user` turn), release
+it to the `prod` label, and the app **renders** the released version at runtime. `index.ts`
+now contains zero prompt text.
 
-This is the first step that uses **`@to11ai/sdk`** (for the control-plane prompt API).
+The **tool definitions stay in application code** (`tools.ts`): the managed prompt carries no
+tools, and the app offers them on the call and runs them when the model asks.
 
 ## Goal
 
-Move all prompt content into to11; have the app fetch the released version, convert it to
-OpenAI shape, and run it — with the authored `developer` rules and tool definitions
-actually reaching the model.
+Move all prompt *text* into to11; have the app render the released version, offer its
+code-defined tools, and run the tool-use loop — with the authored rules actually reaching the
+model and no conversion or header plumbing in the app.
 
 ## Prerequisites
 
 - Step 03 working (provider connected in to11; `TO11_PROVIDER` set).
-- `@to11ai/sdk` ≥ 1.0.0 (`fetch().tools` + `fetch().toolChoice`,
-  `toOpenAITools` / `toOpenAIToolChoice`, and `developerRole`).
+- `@to11ai/sdk` ≥ 2.0.0-rc.5.
 
 ## Author the prompt (one time)
 
 ```bash
 bun install
-cp .env.example .env        # TO11_API_KEY, TO11_PROJECT_ID, TO11_PROVIDER, TO11_API_URL
+cp .env.example .env        # TO11_API_KEY, TO11_PROJECT_ID, TO11_PROVIDER
 bun run author              # creates the prompt + version, releases it to `prod`
 ```
 
@@ -32,20 +32,19 @@ when the content actually changed (it stamps a content fingerprint into the chan
 reuses a matching version). Re-running with unchanged content is a no-op that just keeps
 `prod` pointed at the right version.
 
-`author.ts` is the **only** place prompt text lives. It stores a chat template that
-exercises all **five to11 block roles** plus a conditional block:
+`author.ts` is the **only** place prompt text lives. It stores a chat template of **two
+blocks**:
 
 | Role | Block |
 |------|-------|
-| `system` | persona; the VIP block (rendered only when the condition `tier == "vip"` holds) |
-| `developer` | the operating rules (outrank the user) |
-| `user` | the few-shot questions + the templated user turn |
-| `assistant` | the few-shot replies, including the worked example's tool **calls** |
-| `tool` | the worked few-shot's tool **results** (`{ toolCallId, content }`) |
+| `system` | persona + operating rules, merged into one message; the VIP line is gated by a Liquid `{% if tier == "vip" %}` condition |
+| `user` | the templated live question (`I'm in {{ city }}. {{ user_message }}`) |
 
-The two tool **definitions** (`geocode_city`, `get_current_weather`) live in
-`templateJson.tools[]` and come back to the app as `fetched.tools`. The `role: "tool"`
-blocks in the few-shot are tool **results**.
+No tools and no few-shot tool-call blocks are authored — the operating rules reference the
+tools by name (`geocode_city`, `get_current_weather`), but the **definitions live in code**
+(`tools.ts`). The VIP instruction used to be a separate conditional block; here it's a Liquid
+`{% if %}` inside the system message. `tier` is authored `renderable: false`, so it only drives
+that condition and never appears in the rendered text.
 
 ## Run
 
@@ -53,82 +52,90 @@ blocks in the few-shot are tool **results**.
 bun start
 ```
 
-The app:
+The app renders the released version, spreads it into the request, and adds the code-defined
+tools — `format: "openai"` shapes the prompt for the OpenAI client, so there are **no
+converters**:
 
 ```ts
-const fetched = await to11.prompts.fetch("weather-concierge", {
-  developerRole: "developer",
+import { TOOL_IMPLS, TOOLS } from "./tools"; // definitions + implementations, in code
+
+const to11 = createClient({ format: "openai" }); // env/keys read from TO11_* env vars
+const openai = new OpenAI(to11.openaiOptions());
+
+const prompt = await to11.prompts.render("weather-concierge", {
   variables: { assistant_name: "Roker", city: "New York", units: "fahrenheit",
-               user_message: "Do I need a jacket?",     // {{ }} substitution
-               tier: "vip" },                           // used only in conditions, not rendered
+               user_message: "Do I need a jacket?",   // {{ }} substitution
+               tier: "vip" },                         // used only in the condition, not rendered
 });
-const messages = toOpenAIMessages(fetched.messages);    // OpenAI-ready (incl. developer role)
-const tools = toOpenAITools(fetched.tools);             // from templateJson.tools[]
-const toolChoice = toOpenAIToolChoice(fetched.toolChoice); // from templateJson.toolChoice
+
+const headers = to11.turn().headers(prompt);          // auth + trace + prompt provenance
+const messages = [...prompt.messages];
+
+while (true) {
+  const res = await openai.chat.completions.create(
+    { ...prompt.config, model, messages, tools: TOOLS, tool_choice: "auto" },
+    { headers },
+  );
+  // …run any tool_calls via TOOL_IMPLS, push results, repeat until a final answer.
+}
 ```
 
-- **`developerRole: "developer"`** keeps the authored `developer` rules as a `developer`
-  message instead of folding it to `user`. (Use `"system"` for providers/models that don't
-  accept the `developer` role.)
-- **`fetched.tools`** are the authored tool definitions (`templateJson.tools[]`);
-  `toOpenAITools` turns them into OpenAI function tools.
-- **`fetched.toolChoice`** is the authored, provider-neutral tool-choice directive
-  (`templateJson.toolChoice`); `toOpenAIToolChoice` maps it to the OpenAI `tool_choice` field.
-  Like everything else on the call, it comes from the prompt — nothing is hardcoded in the
-  request. (Returns `undefined` when unset, which lets OpenAI apply its own default.)
-- Model params (`model`, `temperature`, `max_tokens`) come from the version's `modelConfig`
-  via `getVersion`. The model is prefixed with your provider slug for routing:
-  `` `${TO11_PROVIDER}::${cfg.model}` `` (step 03's mechanism).
+- **`render()` returns an OpenAI-shaped result.** `prompt.messages` spreads directly into the
+  request; the merged system message arrives with the VIP line included or dropped depending on
+  `tier`. (Set `format: "anthropic"` instead and you'd get a folded `system` string.)
+- **Tools come from code, not the prompt.** `TOOLS` and `tool_choice` are passed on every call;
+  `render()` returns no tools because none are authored.
+- **`prompt.config`** carries the model params from the version's Config pane (`model`,
+  `temperature`, `max_tokens`). Spread it in; the model is prefixed with your provider slug
+  for routing — `` `${TO11_PROVIDER}::${prompt.config.model}` `` (step 03's mechanism). App-side
+  defaults (`temperature`/`max_tokens`) are set **before** the spread, so an authored value
+  wins but a version that omits one still falls back instead of relying on the provider's default.
 - **`variables`:** most fill `{{ }}` placeholders. A variable authored `renderable: false`
-  (in the version's `variablesSchema`) is only used in block conditions and never
-  substituted into the text; the VIP block renders when its condition `tier == "vip"` holds.
+  (in the version's `variablesSchema`) is only used in conditions and never substituted into
+  the text; the VIP line renders when `{% if tier == "vip" %}` holds.
 
-## Two URLs
+## Expected output
 
-- `TO11_API_URL` — **control plane** (REST API); `createClient`'s `baseUrl`, used to fetch
-  the prompt. Default `https://api.to11.ai`.
-- `TO11_GATEWAY_URL` — **data plane** (gateway); the OpenAI client `baseURL`, used for the
-  model call. Default `https://gw.to11.ai/v1`. Different services — don't mix them.
+The app logs which prompt version it rendered, then runs the same tool-use loop:
+
+```
+Rendered prompt_abc123 v3 -> 2 messages; 2 tools from code
+
+  [tool] geocode_city({"name":"New York"}) -> { latitude: 40.71, longitude: -74.01, name: "New York, ..." }
+  [tool] get_current_weather({"latitude":40.71,"longitude":-74.01,"temperature_unit":"fahrenheit"}) -> { temperature_2m: 54, ... }
+ASSISTANT: It's about 54°F in New York — a light jacket is plenty. Pack a compact umbrella just in case.
+```
+
+(Exact numbers vary with live weather; the prompt id and version reflect what `author`
+released. The VIP tier adds the packing suggestion.)
+
+The answer is the same weather recommendation as the earlier steps. What's different: the two
+initial messages (`system` + `user`) came from the **rendered** prompt rather than code, and
+each `chat` span in the trace is now stamped with the prompt id and version.
 
 ## Prompt provenance on the trace
 
-The app fetches a *managed* prompt, so it can tell the gateway which prompt produced each call.
-`gatewayPromptHeaders(fetched)` emits `x-to11-prompt-id` / `x-to11-prompt-version` (plus
-release / variant / labels when present); spread onto the OpenAI client's `defaultHeaders`, they
-tag every gen_ai span with the prompt version, so each `chat` span in the trace shows the exact
-prompt version behind it. The trace-grouping headers from
-[step 02](../02-gateway#one-trace-per-run) (`traceparent`, `x-to11-session-id`) ride along on the
-same client:
+The app renders a *managed* prompt, so `turn().headers(prompt)` stamps the request with prompt
+provenance (`x-to11-prompt-id` / `x-to11-prompt-version`, plus release / variant / labels when
+present) **in addition to** the auth and trace-grouping headers from
+[step 02](../02-gateway#one-trace-per-run). That tags every `gen_ai` span in the trace with the
+exact prompt version behind it — one `headers()` call carries the whole bag.
 
-```ts
-const openai = new OpenAI({
-  baseURL: TO11_GATEWAY_URL,
-  apiKey: TO11_API_KEY,
-  defaultHeaders: {
-    ...gatewayAuthHeaders({ apiKey: TO11_API_KEY, projectId: TO11_PROJECT_ID, env: TO11_ENV }),
-    ...gatewayPromptHeaders(fetched),   // x-to11-prompt-id / -version / …
-    "x-to11-session-id": sessionId,
-    traceparent,
-  },
-});
-```
+## Two URLs
 
-## What changed
+- The **control plane** (`TO11_API_URL`) — where `render()` fetches the prompt. Default host
+  `https://api.to11.ai`.
+- The **gateway / data plane** (`TO11_GATEWAY_URL`) — where the model call runs. Default host
+  `https://gw.to11.ai`. Different services — don't mix them. Both are read from the environment
+  by `createClient`, so you only set them to self-host.
 
-- The hardcoded `messages`/`tools` are gone from `index.ts`; it fetches them.
-- `author.ts` added; `@to11ai/sdk` added as a dependency.
-- The gateway call carries **prompt provenance** (`gatewayPromptHeaders(fetched)`) plus the
-  step-02 trace-grouping headers, so each trace records the prompt version behind it.
+## What changed from step 03
 
-## The worked few-shot
-
-The template carries the same *positive* few-shot as step 01 — a full `user → assistant
-tool_call → tool result → assistant tool_call → tool result → answer` exchange — but now
-**authored inside the managed prompt** rather than hardcoded in the app: an `assistant`
-block can carry structured `toolCalls`, and a
-`role: "tool"` block is a tool *result* (`{ toolCallId, content }`) linked back to a call by
-id. `toOpenAIMessages` converts the whole exchange to OpenAI shape (`tool_calls` +
-`role: "tool"` turns) for you.
+- The hardcoded `system`/`user` messages are gone from `index.ts`; it renders them from to11.
+  The tool loop and the code-defined tools stay.
+- `author.ts` added.
+- The gateway call carries **prompt provenance**, so each trace records the prompt version
+  behind it — from the same `turn().headers(prompt)` that already carries auth and trace ids.
 
 ## Next
 

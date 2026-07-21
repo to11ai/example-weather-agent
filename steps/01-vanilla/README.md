@@ -35,21 +35,23 @@ ASSISTANT: It's about 54°F in New York — a light jacket is plenty. Pack a com
 
 ## How it works
 
-- `src/tools.ts` — two real, keyless APIs: `geocode_city` → OpenStreetMap Nominatim,
-  `get_current_weather` → Open-Meteo. These are identical in every later step.
-- `src/index.ts` — assembles the prompt as a plain `messages` array, declares the tool
-  schemas, and runs the tool-use loop: call the model, run any tools it asks for, feed the
-  results back, repeat until it returns a final answer.
+- `src/tools.ts` — two real, keyless APIs (`geocode_city` → OpenStreetMap Nominatim,
+  `get_current_weather` → Open-Meteo) plus their **tool definitions** (the schemas the
+  model sees). Identical in every later step.
+- `src/index.ts` — merges the persona and the operating rules into one `system` message
+  (the VIP line is added by a hand-coded conditional), puts the live question in a `user`
+  message, and runs the tool-use loop: call the model with the tools, run any tools it asks
+  for, feed the results back, repeat until it returns a final answer. The initial message
+  list is just `system` + `user` — no seeded tool-call examples.
 
 ## What this step teaches — and its pain points
 
 This works, but everything to11 fixes is visible here:
 
-- **The prompt is buried in code.** The persona, the operating rules, the VIP branch, and
-  the few-shot are all hardcoded in `index.ts`. Changing wording means a code change and a
-  redeploy.
-- **The VIP rule is a hand-written `if`.** to11 expresses this as a declarative conditional
-  block instead.
+- **The prompt is buried in code.** The persona, the operating rules, and the VIP branch are
+  all hardcoded in `index.ts`. Changing wording means a code change and a redeploy.
+- **The VIP rule is a hand-written `if`.** to11 expresses this as a Liquid `{% if %}`
+  condition inside the authored prompt instead.
 - **No observability.** You can't see what was sent, what it cost, or how long it took
   without bolting on your own logging.
 - **No versioning or provenance.** There's no way to know which prompt produced which answer,
