@@ -93,14 +93,19 @@ async function main() {
 	};
 	const modelConfig = { model: "gpt-4o", temperature: 0.3, max_tokens: 400 };
 
-	// Reuse a version already carrying this content (fingerprint in the changelog).
+	// Reuse the NEWEST version if it already carries this content — we never
+	// republish an identical version, and never reach back to relabel an older one.
 	const fp = fingerprint({ templateJson, variablesSchema, modelConfig });
 	const versions = await client.prompts.listVersions({
 		promptId: prompt.id,
 	});
-	const existing = versions.find((v) =>
-		(v.changelog ?? "").includes(`fp:${fp}`),
-	);
+	const newest = versions.length
+		? versions.reduce((a, b) => (b.version > a.version ? b : a))
+		: undefined;
+	const existing =
+		newest && (newest.changelog ?? "").includes(`fp:${fp}`)
+			? newest
+			: undefined;
 	const version =
 		existing ??
 		(await client.prompts.createVersion({
@@ -121,7 +126,7 @@ async function main() {
 
 	console.log(
 		existing
-			? `Reused ${prompt.slug} v${version.version} (unchanged); prod is up to date.`
+			? `Reused newest ${prompt.slug} v${version.version} (unchanged); prod is up to date.`
 			: `Authored ${prompt.slug} v${version.version} and released to prod.`,
 	);
 }
