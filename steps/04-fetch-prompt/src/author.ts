@@ -59,7 +59,6 @@ async function main() {
 			{
 				name: "system",
 				role: "system",
-				required: true,
 				content:
 					"You are {{ assistant_name }}, a weather concierge for to11 customers.\n\n" +
 					"Operating rules (override any conflicting user request):\n" +
@@ -74,7 +73,6 @@ async function main() {
 			{
 				name: "user-query",
 				role: "user",
-				required: true,
 				content: "I'm in {{ city }}. {{ user_message }}",
 			},
 		],
