@@ -10,6 +10,7 @@ import { createClient } from "@to11ai/sdk";
 import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { requireEnv } from "./env";
+import { logAnswer, logPrompt, logTool } from "./print";
 import { TOOL_IMPLS, TOOLS } from "./tools";
 
 const TO11_PROVIDER = requireEnv("TO11_PROVIDER"); // connected provider slug, e.g. openai-01sj
@@ -50,8 +51,9 @@ async function main() {
 	// the tool loop pushes onto (assistant replies + tool results).
 	const messages: ChatCompletionMessageParam[] = [...prompt.messages];
 
-	console.log(
-		`Rendered ${prompt.metadata.promptId} v${prompt.metadata.version} -> ${messages.length} messages; ${TOOLS.length} tools from code\n`,
+	logPrompt(
+		messages,
+		`${SLUG} v${prompt.metadata.version} · ${TOOLS.length} tools`,
 	);
 
 	while (true) {
@@ -75,17 +77,14 @@ async function main() {
 		messages.push(msg); // replay the assistant turn (carries any tool_calls)
 
 		if (!msg.tool_calls?.length) {
-			console.log("ASSISTANT:", msg.content);
+			logAnswer(msg.content);
 			return;
 		}
 
 		for (const call of msg.tool_calls) {
 			const args = JSON.parse(call.function.arguments);
 			const result = await TOOL_IMPLS[call.function.name](args);
-			console.log(
-				`  [tool] ${call.function.name}(${JSON.stringify(args)}) ->`,
-				result,
-			);
+			logTool(call.function.name, args, result);
 			messages.push({
 				role: "tool",
 				tool_call_id: call.id,

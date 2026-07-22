@@ -7,6 +7,7 @@ import { createClient } from "@to11ai/sdk";
 import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { requireEnv } from "./env";
+import { logAnswer, logPrompt, logTool } from "./print";
 import { TOOL_IMPLS, TOOLS } from "./tools";
 
 // The SDK reads TO11_API_KEY / TO11_PROJECT_ID from the environment and errors
@@ -60,6 +61,8 @@ async function main() {
 	// tool loop into one trace.
 	const headers = to11.turn().headers();
 
+	logPrompt(messages);
+
 	while (true) {
 		const response = await openai.chat.completions.create(
 			{
@@ -77,17 +80,14 @@ async function main() {
 		messages.push(msg); // replay the assistant turn (carries any tool_calls)
 
 		if (!msg.tool_calls?.length) {
-			console.log("ASSISTANT:", msg.content);
+			logAnswer(msg.content);
 			return;
 		}
 
 		for (const call of msg.tool_calls) {
 			const args = JSON.parse(call.function.arguments);
 			const result = await TOOL_IMPLS[call.function.name](args);
-			console.log(
-				`  [tool] ${call.function.name}(${JSON.stringify(args)}) ->`,
-				result,
-			);
+			logTool(call.function.name, args, result);
 			messages.push({
 				role: "tool",
 				tool_call_id: call.id,
