@@ -7,6 +7,19 @@ function block(role: string, content: string): void {
 	console.log(`[${role}]\n${content.trim()}\n`);
 }
 
+/** Header for a rendered prompt: slug, version, the label it resolved through
+ *  (and the variant, if a weighted release served one), and the tool count. */
+export function promptHeader(
+	slug: string,
+	meta: { version: number; label: string; variantName?: string },
+	toolCount: number,
+): string {
+	const label = meta.variantName
+		? `${meta.label} → ${meta.variantName}`
+		: meta.label;
+	return `${slug} v${meta.version} · label ${label} · ${toolCount} tools`;
+}
+
 /** Optional title, then the messages sent to the model (system / user). */
 export function logPrompt(
 	messages: ChatCompletionMessageParam[],

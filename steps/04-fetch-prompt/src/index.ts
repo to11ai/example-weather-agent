@@ -10,7 +10,7 @@ import { createClient } from "@to11ai/sdk";
 import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { requireEnv } from "./env";
-import { logAnswer, logPrompt, logTool } from "./print";
+import { logAnswer, logPrompt, logTool, promptHeader } from "./print";
 import { TOOL_IMPLS, TOOLS } from "./tools";
 
 const TO11_PROVIDER = requireEnv("TO11_PROVIDER"); // connected provider slug, e.g. openai-01sj
@@ -51,10 +51,7 @@ async function main() {
 	// the tool loop pushes onto (assistant replies + tool results).
 	const messages: ChatCompletionMessageParam[] = [...prompt.messages];
 
-	logPrompt(
-		messages,
-		`${SLUG} v${prompt.metadata.version} · ${TOOLS.length} tools`,
-	);
+	logPrompt(messages, promptHeader(SLUG, prompt.metadata, TOOLS.length));
 
 	while (true) {
 		// tools + tool_choice come from application code, not the prompt.
