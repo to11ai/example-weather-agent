@@ -27,7 +27,7 @@ sequenceDiagram
     participant OM as Open-Meteo
 
     User->>App: "I'm in New York. Do I need a jacket?"
-    Note over App: render released prompt from to11 (steps 04+); tools from code
+    Note over App: render released prompt from to11 (steps 04+), tools from code
     App->>GW: chat.completions (messages + tools)
     GW->>LLM: forward (provider key injected)
     LLM-->>App: tool_call geocode_city("New York")
