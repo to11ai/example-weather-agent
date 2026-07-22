@@ -38,7 +38,7 @@ blocks**:
 | Role | Block |
 |------|-------|
 | `system` | persona + operating rules, merged into one message; the VIP line is gated by a Liquid `{% if tier == "vip" %}` condition |
-| `user` | the templated live question (`I'm in {{ city }}. {{ user_message }}`) |
+| `user` | the templated live question (`I'm in {{city}}. {{user_message}}`) |
 
 No tools and no few-shot tool-call blocks are authored — the operating rules reference the
 tools by name (`geocode_city`, `get_current_weather`), but the **definitions live in code**
