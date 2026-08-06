@@ -1,0 +1,23 @@
+# Config for the lychee link checker (see .github/workflows/links.yml).
+# lychee checks ./**/*.md, which skips dot-directories — .github/ is not scanned.
+
+# Some hosts are slow on a cold connection; don't fail them for that.
+max_retries = 3
+timeout = 30
+
+# Never check vendored docs. CI has no node_modules, but a local run does, and
+# scanning them means thousands of third-party links we don't own.
+exclude_path = ["node_modules"]
+
+exclude = [
+  # GitHub's private-advisory form (linked from SECURITY.md) requires an
+  # authenticated session, so an anonymous check can never succeed.
+  '^https://github\.com/to11ai/example-weather-agent/security/advisories/new$',
+
+  # The gateway and control-plane hosts. Both are real and correct as base
+  # URLs, but neither serves a route at "/", so an anonymous GET is a 404 by
+  # design. They currently appear only inside code spans (which lychee does not
+  # extract); these entries keep the check green if one ever becomes a bare link.
+  '^https://gw\.to11\.ai/?$',
+  '^https://api\.to11\.ai/?$',
+]

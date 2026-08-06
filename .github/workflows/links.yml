@@ -1,0 +1,25 @@
+name: Links
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Catches rot in third-party links without anyone touching the repo.
+  schedule:
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  lychee:
+    name: Check links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # Excludes live in lychee.toml. Markdown is all we have, so narrow the
+      # default globs and skip the "no .html/.rst files found" warnings.
+      - uses: lycheeverse/lychee-action@v2
+        with:
+          args: "--verbose --no-progress './**/*.md'"
+          fail: true
