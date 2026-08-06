@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "weather-agent-01-vanilla",
+      "name": "weather-agent-02-gateway",
       "dependencies": {
         "@to11ai/sdk": "^2.0.0-rc.6",
         "openai": "^4",

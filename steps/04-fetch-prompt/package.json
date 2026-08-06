@@ -1,6 +1,7 @@
 {
 	"name": "weather-agent-04-fetch-prompt",
 	"private": true,
+	"license": "MIT",
 	"type": "module",
 	"scripts": {
 		"start": "bun src/index.ts",
