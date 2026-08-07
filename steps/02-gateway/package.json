@@ -1,6 +1,7 @@
 {
 	"name": "weather-agent-02-gateway",
 	"private": true,
+	"license": "MIT",
 	"type": "module",
 	"scripts": {
 		"start": "bun src/index.ts",
@@ -8,7 +9,7 @@
 	},
 	"dependencies": {
 		"openai": "^4",
-		"@to11ai/sdk": "^2.0.0-rc.6"
+		"@to11ai/sdk": "^2.0.0"
 	},
 	"devDependencies": {
 		"@types/bun": "latest",

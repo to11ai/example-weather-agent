@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The repo's git hooks are for local development; CI runs the checks directly.
+  HUSKY: 0
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .tool-versions
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .tool-versions
+      - name: Install (frozen lockfile)
+        run: bun install --frozen-lockfile
+      - name: Biome
+        run: bun run lint
+
+  # Each step is a standalone snapshot with its own lockfile, so discover them
+  # instead of hardcoding the list — a new step is type-checked automatically.
+  discover:
+    name: Discover steps
+    runs-on: ubuntu-latest
+    outputs:
+      steps: ${{ steps.list.outputs.steps }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: list
+        run: |
+          set -euo pipefail
+          list=$(find steps -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort | jq -R . | jq -sc .)
+          echo "steps=$list" >> "$GITHUB_OUTPUT"
+          echo "Found: $list"
+
+  typecheck:
+    name: Typecheck ${{ matrix.step }}
+    needs: discover
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        step: ${{ fromJSON(needs.discover.outputs.steps) }}
+    defaults:
+      run:
+        working-directory: steps/${{ matrix.step }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .tool-versions
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .tool-versions
+      # Fails if the lockfile is out of sync with package.json.
+      - name: Install (frozen lockfile)
+        run: bun install --frozen-lockfile
+      - name: tsc --noEmit
+        run: bun run typecheck

@@ -17,7 +17,7 @@ model and no conversion or header plumbing in the app.
 ## Prerequisites
 
 - Step 03 working (provider connected in to11; `TO11_PROVIDER` set).
-- `@to11ai/sdk` ≥ 2.0.0-rc.6.
+- `@to11ai/sdk` ≥ 2.0.0.
 
 ## Author the prompt (one time)
 
@@ -157,6 +157,6 @@ exact prompt version behind it — one `headers()` call carries the whole bag.
 
 ## Next
 
-[Step 05](../05-label-deploy) versions the prompt: deploy a v2 to `staging`, test it,
+Step 05 _(coming soon)_ versions the prompt: deploy a v2 to `staging`, test it,
 promote to `prod`, attach per-version provenance, and roll back — all without redeploying
 the app.

@@ -1,6 +1,11 @@
 {
 	"name": "example-weather-agent",
 	"private": true,
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/to11ai/example-weather-agent.git"
+	},
 	"type": "module",
 	"scripts": {
 		"lint": "biome check .",

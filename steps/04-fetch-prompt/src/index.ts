@@ -13,7 +13,7 @@ import { requireEnv } from "./env";
 import { logAnswer, logPrompt, logTool, promptHeader } from "./print";
 import { TOOL_IMPLS, TOOLS } from "./tools";
 
-const TO11_PROVIDER = requireEnv("TO11_PROVIDER"); // connected provider slug, e.g. openai-01sj
+const TO11_PROVIDER = requireEnv("TO11_PROVIDER"); // connected provider slug, e.g. my-openai
 
 const SLUG = "weather-concierge";
 

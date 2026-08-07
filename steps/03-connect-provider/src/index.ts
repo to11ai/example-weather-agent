@@ -16,7 +16,7 @@ import { TOOL_IMPLS, TOOLS } from "./tools";
 const TO11_PROVIDER = requireEnv("TO11_PROVIDER");
 
 // Route to that connected provider via the gateway's "<provider>::<model>"
-// convention — e.g. TO11_PROVIDER=openai-01sj -> model "openai-01sj::gpt-4o".
+// convention — e.g. TO11_PROVIDER=my-openai -> model "my-openai::gpt-4o".
 const MODEL = `${TO11_PROVIDER}::gpt-4o`;
 
 // Without prompt management, the prompt lives in application code.

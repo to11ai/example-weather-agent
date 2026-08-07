@@ -1,6 +1,7 @@
 {
 	"name": "weather-agent-01-vanilla",
 	"private": true,
+	"license": "MIT",
 	"type": "module",
 	"scripts": {
 		"start": "bun src/index.ts",

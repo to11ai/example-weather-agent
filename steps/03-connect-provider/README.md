@@ -36,8 +36,8 @@ const openai = new OpenAI(to11.openaiOptions()); // managed: gateway supplies th
 
 Because the app no longer sends a provider key, it has to tell the gateway **which**
 connected provider's stored credential to use. You do that with the connection's **slug**
-(the label you gave it when connecting, e.g. `openai-01sj`) via the gateway's
-`"<slug>::<model>"` model-prefix convention — the app sends `model: "openai-01sj::gpt-4o"`.
+(the label you gave it when connecting, e.g. `my-openai`) via the gateway's
+`"<slug>::<model>"` model-prefix convention — the app sends `model: "my-openai::gpt-4o"`.
 The slug comes from a **required** env var:
 
 ```ts

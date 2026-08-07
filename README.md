@@ -1,6 +1,6 @@
 # Weather Agent — a to11 tutorial
 
-Build a tool-using weather agent, then adopt the [to11](https://github.com/to11ai/platform)
+Build a tool-using weather agent, then adopt the [to11](https://to11.ai)
 platform one layer at a time. The agent takes a city and a question ("I'm in New York.
 Do I need a jacket?"), geocodes the city, looks up the current weather, and answers through
 an OpenAI `gpt-4o` tool-use loop. The tool definitions live in application code; from step 04
@@ -46,7 +46,7 @@ sequenceDiagram
 
 ## What you'll build
 
-Five steps, each adding exactly one layer:
+Five steps, each adding exactly one layer — four are here today, step 05 is in progress:
 
 | Step | Directory | Adds |
 |------|-----------|------|
@@ -54,7 +54,7 @@ Five steps, each adding exactly one layer:
 | 2 | [steps/02-gateway](steps/02-gateway) | Route through the to11 gateway for observability |
 | 3 | [steps/03-connect-provider](steps/03-connect-provider) | Connect OpenAI in to11; drop the provider key |
 | 4 | [steps/04-fetch-prompt](steps/04-fetch-prompt) | Author the prompt in to11; the app renders it |
-| 5 | [steps/05-label-deploy](steps/05-label-deploy) | Versions, staging/prod labels, provenance, rollback |
+| 5 | `steps/05-label-deploy` _(coming soon)_ | Versions, staging/prod labels, provenance, rollback |
 
 ## Prerequisites
 
