@@ -5,7 +5,7 @@
     "": {
       "name": "weather-agent-02-gateway",
       "dependencies": {
-        "@to11ai/sdk": "^2.0.0-rc.6",
+        "@to11ai/sdk": "^2.0.0",
         "openai": "^4",
       },
       "devDependencies": {
@@ -15,7 +15,7 @@
     },
   },
   "packages": {
-    "@to11ai/sdk": ["@to11ai/sdk@2.0.0-rc.6", "", { "dependencies": { "zod": "4.4.3" } }, "sha512-1lfu9BdLg/hTujJtNBX2RcOfg40C+erB7iGcHCC3suNpegXMUNRmuuujg+ZScbZjF+tUz0vwthgbhj8VpUQHBA=="],
+    "@to11ai/sdk": ["@to11ai/sdk@2.0.0", "", { "dependencies": { "zod": "4.4.3" } }, "sha512-8kL798Lku5+vLBJcHqC2bNGejWqX9C8MJbVQsrt5hEV0Tk1EC5hSk9nF7aXo25U9hd8tr7Mc1gfxbsy9CvNOgw=="],
 
     "@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
 

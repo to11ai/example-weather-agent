@@ -17,7 +17,7 @@ model and no conversion or header plumbing in the app.
 ## Prerequisites
 
 - Step 03 working (provider connected in to11; `TO11_PROVIDER` set).
-- `@to11ai/sdk` ≥ 2.0.0-rc.6.
+- `@to11ai/sdk` ≥ 2.0.0.
 
 ## Author the prompt (one time)
 
