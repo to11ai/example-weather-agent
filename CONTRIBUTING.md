@@ -1,18 +1,18 @@
 # Contributing Code to this Repository
 
 We maintain all code in-house to ensure supply chain security and quality.
-All code contributions are managed exclusively by the to11 AI (Terramate GmbH)
+All code contributions are managed exclusively by the to11 AI (to11 Inc.)
 team.
 
 Pull requests to this repository not made by employees of to11 AI
-(Terramate GmbH) will be closed.
+(to11 Inc.) will be closed.
 
 # Contributing Bug Reports and Feature Requests
 
 We are thrilled to receive your bug reports and feature requests, which we will
 implement for you (and maintain over time) at our discretion. By including any
 source code in a bug report or feature request, you grant a full copyright
-license to to11 AI (Terramate GmbH).
+license to to11 AI (to11 Inc.).
 
 # Why?
 
@@ -35,7 +35,7 @@ co-author on the pull request we generate at your request.
 # Copyright
 
 This does _not_ imply that we share the copyright ownership of the work - the
-resulting software will be the exclusive copyright of to11 AI (Terramate GmbH).
+resulting software will be the exclusive copyright of to11 AI (to11 Inc.).
 
 # No Exceptions
 
