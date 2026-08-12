@@ -154,9 +154,3 @@ exact prompt version behind it — one `headers()` call carries the whole bag.
 - `author.ts` added.
 - The gateway call carries **prompt provenance**, so each trace records the prompt version
   behind it — from the same `turn().headers(prompt)` that already carries auth and trace ids.
-
-## Next
-
-Step 05 _(coming soon)_ versions the prompt: deploy a v2 to `staging`, test it,
-promote to `prod`, attach per-version provenance, and roll back — all without redeploying
-the app.

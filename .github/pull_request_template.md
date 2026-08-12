@@ -3,7 +3,7 @@
 > [!IMPORTANT]
 > **We do not accept outside pull requests.** All code in this repository is
 > written and maintained in-house. Pull requests not made by employees of
-> to11 AI (Terramate GmbH) will be closed — see
+> to11 AI (to11 Inc.) will be closed — see
 > [CONTRIBUTING.md](https://github.com/to11ai/example-weather-agent/blob/main/CONTRIBUTING.md).
 >
 > **Bug reports and feature requests are very welcome.** Please
@@ -16,7 +16,7 @@
 
 ---
 
-<!-- to11 AI (Terramate GmbH) employees: describe your change below. -->
+<!-- to11 AI (to11 Inc.) employees: describe your change below. -->
 
 ## What changed
 

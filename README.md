@@ -46,7 +46,7 @@ sequenceDiagram
 
 ## What you'll build
 
-Five steps, each adding exactly one layer — four are here today, step 05 is in progress:
+Four steps, each adding exactly one layer:
 
 | Step | Directory | Adds |
 |------|-----------|------|
@@ -54,7 +54,6 @@ Five steps, each adding exactly one layer — four are here today, step 05 is in
 | 2 | [steps/02-gateway](steps/02-gateway) | Route through the to11 gateway for observability |
 | 3 | [steps/03-connect-provider](steps/03-connect-provider) | Connect OpenAI in to11; drop the provider key |
 | 4 | [steps/04-fetch-prompt](steps/04-fetch-prompt) | Author the prompt in to11; the app renders it |
-| 5 | `steps/05-label-deploy` _(coming soon)_ | Versions, staging/prod labels, provenance, rollback |
 
 ## Prerequisites
 
@@ -89,4 +88,4 @@ bun start
 ```
 
 Start with [steps/01-vanilla](steps/01-vanilla) and work upward — each step's README ends
-with what changed and what comes next.
+with what changed from the step before it.
